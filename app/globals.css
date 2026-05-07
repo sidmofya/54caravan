@@ -1,0 +1,85 @@
+@import "tailwindcss";
+
+/* ── Screen 1: Threshold ─────────────────────── */
+:root {
+  --s1-bg:        #0d0c09;
+  --s1-parchment: #e8dbc4;
+  --s1-charcoal:  #6b6055;
+  --s1-bronze:    #b8904a;
+
+  /* ── Screen 2: Transmission ─────────────────── */
+  --s2-bg:        #070c10;
+  --s2-teal:      #3a706e;
+  --s2-indigo:    #151a30;
+  --s2-ember:     #c4622a;
+  --s2-gold:      #b08840;
+
+  /* ── Screen 3: Claim ─────────────────────────── */
+  --s3-bg:        #0a0905;
+  --s3-gold:      #c8a050;
+  --s3-parchment: #dfd0b4;
+  --s3-ember:     #c45030;
+  --s3-teal:      #3a7a6a;
+}
+
+html,
+body {
+  height: 100%;
+  overscroll-behavior: none;
+}
+
+body {
+  background: var(--s1-bg);
+  color: var(--s1-parchment);
+  font-family: "Georgia", "Times New Roman", serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: var(--s1-bronze);
+  color: var(--s1-bg);
+}
+
+/* ── Grain overlay (always on) ───────────────── */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.4;
+}
+
+/* ── Keyframes ───────────────────────────────── */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes ember-pulse {
+  0%, 100% { opacity: 0.12; }
+  50%       { opacity: 0.22; }
+}
+
+@keyframes grain-shift {
+  0%   { background-position: 0% 0%; }
+  25%  { background-position: 30% 15%; }
+  50%  { background-position: 60% 40%; }
+  75%  { background-position: 20% 70%; }
+  100% { background-position: 0% 0%; }
+}
+
+.animate-fade-in {
+  animation: fade-in 1.2s ease forwards;
+}
+
+.animate-ember-pulse {
+  animation: ember-pulse 6s ease-in-out infinite;
+}
+
+.animate-grain-shift {
+  animation: grain-shift 12s ease-in-out infinite;
+  background-size: 200% 200%;
+}
