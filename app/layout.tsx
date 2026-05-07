@@ -3,11 +3,11 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "The 54 Caravan",
-  description: "A mobile-first cinematic portal experience.",
+  description: "Not your ordinary caravan.",
   metadataBase: new URL("https://54caravan.com"),
   openGraph: {
     title: "The 54 Caravan",
-    description: "A mobile-first cinematic portal experience.",
+    description: "Not your ordinary caravan.",
     type: "website",
   },
 };
