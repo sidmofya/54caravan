@@ -1,27 +1,5 @@
 @import "tailwindcss";
 
-/* ── Screen 1: Threshold ─────────────────────── */
-:root {
-  --s1-bg:        #0d0c09;
-  --s1-parchment: #e8dbc4;
-  --s1-charcoal:  #6b6055;
-  --s1-bronze:    #b8904a;
-
-  /* ── Screen 2: Transmission ─────────────────── */
-  --s2-bg:        #070c10;
-  --s2-teal:      #3a706e;
-  --s2-indigo:    #151a30;
-  --s2-ember:     #c4622a;
-  --s2-gold:      #b08840;
-
-  /* ── Screen 3: Claim ─────────────────────────── */
-  --s3-bg:        #0a0905;
-  --s3-gold:      #c8a050;
-  --s3-parchment: #dfd0b4;
-  --s3-ember:     #c45030;
-  --s3-teal:      #3a7a6a;
-}
-
 html,
 body {
   height: 100%;
@@ -29,16 +7,18 @@ body {
 }
 
 body {
-  background: var(--s1-bg);
-  color: var(--s1-parchment);
+  /* Neutral fallback so there's no unstyled flash before a route's own
+     themed wrapper mounts and paints over it. */
+  background: #0a0905;
+  color: #dfd0b4;
   font-family: "Georgia", "Times New Roman", serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 ::selection {
-  background: var(--s1-bronze);
-  color: var(--s1-bg);
+  background: #b8904a;
+  color: #0a0905;
 }
 
 /* ── Grain overlay (always on) ───────────────── */
