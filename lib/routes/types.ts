@@ -12,6 +12,8 @@ export interface AudioArtifactConfig {
   titleLines: string[];
   revealAfter: { onEnded: boolean; fallbackMs: number };
   advanceLabel: string;
+  /** Authored tempo in BPM, enabling tempo-sync in the console. Not detected. */
+  bpm?: number;
 }
 // Future artifact kinds (story, image, object, voice note) join this union
 // as additional variants — no restructuring required.

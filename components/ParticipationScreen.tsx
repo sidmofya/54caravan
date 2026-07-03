@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import type { RouteConfig } from "@/lib/routes/types";
 import { toCssVars } from "@/lib/routes/theme";
 import { validateParticipationCode } from "@/lib/routes/validateCode";
 import { visitorMemory } from "@/lib/memory/localStorageMemory";
+import { hasEnoughSignalsForConsole } from "@/lib/console/eligibility";
 
 interface Props {
   route: RouteConfig;
@@ -159,6 +161,15 @@ export default function ParticipationScreen({ route }: Props) {
             >
               {config.successStatus}
             </p>
+            {hasEnoughSignalsForConsole() && (
+              <Link
+                href="/console/"
+                className="mt-4 text-[10px] tracking-[0.3em] uppercase"
+                style={{ color: "var(--route-participation-gold)" }}
+              >
+                enter your console
+              </Link>
+            )}
           </div>
         )}
       </div>
