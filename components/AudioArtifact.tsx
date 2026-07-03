@@ -1,9 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import type { AudioArtifactConfig, ScreenTheme } from "@/lib/routes/types";
+import { toCssVars } from "@/lib/routes/theme";
 
 interface Props {
-  onClaim: () => void;
+  config: AudioArtifactConfig;
+  contextualText?: string[];
+  theme: ScreenTheme;
+  onAdvance: () => void;
 }
 
 function formatTime(seconds: number): string {
@@ -13,22 +18,23 @@ function formatTime(seconds: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-export default function TransmissionScreen({ onClaim }: Props) {
+export default function AudioArtifact({ config, contextualText, theme, onAdvance }: Props) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const progressBarRef = useRef<HTMLDivElement>(null);
 
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [claimReady, setClaimReady] = useState(false);
+  const [advanceReady, setAdvanceReady] = useState(false);
 
-  const reveal = useCallback(() => setClaimReady(true), []);
+  const reveal = useCallback(() => setAdvanceReady(true), []);
 
-  /* 20-second dev fallback + audio event wiring */
+  /* Dev fallback + audio event wiring */
   useEffect(() => {
-    const timer = setTimeout(reveal, 20_000);
+    if (!config.revealAfter.fallbackMs) return;
+    const timer = setTimeout(reveal, config.revealAfter.fallbackMs);
     return () => clearTimeout(timer);
-  }, [reveal]);
+  }, [reveal, config.revealAfter.fallbackMs]);
 
   const handlePlayPause = () => {
     const audio = audioRef.current;
@@ -54,9 +60,9 @@ export default function TransmissionScreen({ onClaim }: Props) {
   return (
     <section
       className="relative flex flex-col items-center justify-center min-h-dvh px-6 py-12 text-center overflow-hidden"
-      style={{ background: "var(--s2-bg)" }}
+      style={{ ...toCssVars("artifact", theme), background: "var(--route-artifact-bg)" }}
     >
-      {/* Atmospheric teal glow */}
+      {/* Atmospheric glow */}
       <div
         className="absolute inset-x-0 bottom-0 h-1/2 pointer-events-none animate-ember-pulse"
         style={{
@@ -89,27 +95,30 @@ export default function TransmissionScreen({ onClaim }: Props) {
       <div className="relative z-10 flex flex-col items-center animate-fade-in w-full max-w-sm">
         <p
           className="text-[11px] tracking-[0.4em] uppercase"
-          style={{ color: "var(--s2-teal)" }}
+          style={{ color: "var(--route-artifact-primary)" }}
         >
-          Transmission 001
+          {config.eyebrow}
         </p>
         <h2
           className="mt-3 text-4xl md:text-5xl font-light leading-tight"
-          style={{ color: "var(--s2-gold)" }}
+          style={{ color: "var(--route-artifact-highlight)" }}
         >
-          The Return
-          <br />
-          Begins
+          {config.titleLines.map((line, i) => (
+            <span key={i}>
+              {line}
+              {i < config.titleLines.length - 1 && <br />}
+            </span>
+          ))}
         </h2>
 
         {/* Audio player */}
         <div className="mt-10 w-full">
           <audio
             ref={audioRef}
-            src="/audio/transmission-001.mp3"
+            src={config.src}
             onPlay={() => setPlaying(true)}
             onPause={() => setPlaying(false)}
-            onEnded={() => { setPlaying(false); reveal(); }}
+            onEnded={() => { setPlaying(false); if (config.revealAfter.onEnded) reveal(); }}
             onError={reveal}
             onTimeUpdate={() => setCurrentTime(audioRef.current?.currentTime ?? 0)}
             onLoadedMetadata={() => setDuration(audioRef.current?.duration ?? 0)}
@@ -123,16 +132,16 @@ export default function TransmissionScreen({ onClaim }: Props) {
               aria-label={playing ? "Pause" : "Play"}
               className="flex-shrink-0 w-9 h-9 flex items-center justify-center border rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-1"
               style={{
-                borderColor: "var(--s2-teal)",
-                color: "var(--s2-teal)",
+                borderColor: "var(--route-artifact-primary)",
+                color: "var(--route-artifact-primary)",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = "var(--s2-teal)";
-                e.currentTarget.style.color = "var(--s2-bg)";
+                e.currentTarget.style.background = "var(--route-artifact-primary)";
+                e.currentTarget.style.color = "var(--route-artifact-bg)";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.background = "transparent";
-                e.currentTarget.style.color = "var(--s2-teal)";
+                e.currentTarget.style.color = "var(--route-artifact-primary)";
               }}
             >
               {playing ? (
@@ -162,7 +171,7 @@ export default function TransmissionScreen({ onClaim }: Props) {
                 className="absolute top-0 left-0 h-full transition-all duration-100"
                 style={{
                   width: `${progress}%`,
-                  background: "var(--s2-teal)",
+                  background: "var(--route-artifact-primary)",
                 }}
               />
               {/* Scrubber dot */}
@@ -171,7 +180,7 @@ export default function TransmissionScreen({ onClaim }: Props) {
                 style={{
                   left: `${progress}%`,
                   transform: `translateX(-50%) translateY(-50%)`,
-                  background: "var(--s2-teal)",
+                  background: "var(--route-artifact-primary)",
                 }}
               />
             </div>
@@ -179,53 +188,52 @@ export default function TransmissionScreen({ onClaim }: Props) {
             {/* Time */}
             <span
               className="flex-shrink-0 text-[11px] tabular-nums"
-              style={{ color: "var(--s2-teal)", opacity: 0.7 }}
+              style={{ color: "var(--route-artifact-primary)", opacity: 0.7 }}
             >
               {formatTime(currentTime)}&nbsp;/&nbsp;{formatTime(duration)}
             </span>
           </div>
         </div>
 
-        {/* Tagline */}
-        <div className="mt-8 flex flex-col gap-1">
-          <p
-            className="text-sm italic"
-            style={{ color: "rgba(223,208,180,0.65)" }}
-          >
-            This is the first signal.
-          </p>
-          <p
-            className="text-sm italic"
-            style={{ color: "rgba(223,208,180,0.65)" }}
-          >
-            Listen with your body.
-          </p>
-        </div>
+        {/* Contextual text */}
+        {contextualText && contextualText.length > 0 && (
+          <div className="mt-8 flex flex-col gap-1">
+            {contextualText.map((line, i) => (
+              <p
+                key={i}
+                className="text-sm italic"
+                style={{ color: "rgba(223,208,180,0.65)" }}
+              >
+                {line}
+              </p>
+            ))}
+          </div>
+        )}
 
-        {/* Claim button — revealed after audio ends or 20s fallback */}
+        {/* Advance button — revealed after audio ends or fallback timer */}
         <div
           className="mt-12 transition-opacity duration-700"
-          style={{ opacity: claimReady ? 1 : 0, pointerEvents: claimReady ? "auto" : "none" }}
-          aria-hidden={!claimReady}
+          style={{ opacity: advanceReady ? 1 : 0, pointerEvents: advanceReady ? "auto" : "none" }}
+          aria-hidden={!advanceReady}
         >
           <button
-            onClick={onClaim}
+            onClick={onAdvance}
             className="px-10 py-3 text-xs tracking-[0.35em] uppercase border transition-all duration-300 focus:outline-none focus-visible:ring-2"
             style={{
-              borderColor: "var(--s2-ember)",
-              color: "var(--s2-ember)",
+              borderColor: "var(--route-artifact-accent)",
+              color: "var(--route-artifact-accent)",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = "var(--s2-ember)";
-              e.currentTarget.style.color = "var(--s2-bg)";
+              e.currentTarget.style.background = "var(--route-artifact-accent)";
+              e.currentTarget.style.color = "var(--route-artifact-bg)";
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.background = "transparent";
-              e.currentTarget.style.color = "var(--s2-ember)";
+              e.currentTarget.style.color = "var(--route-artifact-accent)";
             }}
-            tabIndex={claimReady ? 0 : -1}
+            tabIndex={advanceReady ? 0 : -1}
           >
-            Claim Your Place
+            {config.advanceLabel}
           </button>
         </div>
       </div>
