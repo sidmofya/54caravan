@@ -4,4 +4,6 @@ import { defineConfig } from "vite";
 export default defineConfig({
   publicDir: "../data",
   server: { host: "127.0.0.1", port: 5173, strictPort: true },
+  // One copy of three for the app and the examples it imports (passes, geometries).
+  resolve: { dedupe: ["three"] },
 });

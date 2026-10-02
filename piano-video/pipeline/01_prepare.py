@@ -3,6 +3,8 @@ import subprocess
 
 from common import CLIP, DURATION, SOURCE, START, TAIL
 
+CLIP.parent.mkdir(parents=True, exist_ok=True)
+
 subprocess.run(
     [
         "ffmpeg", "-hide_banner", "-loglevel", "error", "-y",

@@ -51,14 +51,14 @@ function feltProfile(): THREE.Shape {
   return s;
 }
 
-function extrudeAcrossX(shape: THREE.Shape, width: number) {
+function extrudeAcrossX(shape: THREE.Shape, width: number, detail = 16) {
   const geo = new THREE.ExtrudeGeometry(shape, {
     depth: width,
     bevelEnabled: true,
     bevelThickness: 0.0008,
     bevelSize: 0.0008,
-    bevelSegments: 2,
-    curveSegments: 16,
+    bevelSegments: detail > 16 ? 4 : 2,
+    curveSegments: detail,
   });
   // Shape x -> world z, shape y -> world y, extrusion -> world -x; then centre.
   geo.rotateY(-Math.PI / 2);
@@ -67,14 +67,14 @@ function extrudeAcrossX(shape: THREE.Shape, width: number) {
 }
 
 /** Geometry built in hammer-local space: pivot at the origin, shank along +y. */
-function hammerParts() {
+export function hammerParts(detail = 16) {
   const shank = new THREE.CylinderGeometry(0.0021, 0.0021, HAMMER.shank, 8);
   shank.translate(0, HAMMER.shank / 2, 0);
 
   const moulding = new RoundedBoxGeometry(HAMMER.width * 0.94, HAMMER.headHeight * 0.8, HAMMER.backDepth, 2, 0.0015);
   moulding.translate(0, 0, HAMMER.backDepth / 2);
 
-  const felt = extrudeAcrossX(feltProfile(), HAMMER.width);
+  const felt = extrudeAcrossX(feltProfile(), HAMMER.width, detail);
   // A thin white underfelt band, visible on the sides as on real hammers.
   const under = new THREE.Shape();
   const h = HAMMER.headHeight / 2 - 0.004;
@@ -82,7 +82,7 @@ function hammerParts() {
   under.bezierCurveTo(-0.006, h, -0.0105, 0.006, -0.011, 0);
   under.bezierCurveTo(-0.0105, -0.006, -0.006, -h, 0.0012, -h);
   under.closePath();
-  const underfelt = extrudeAcrossX(under, HAMMER.width + 0.0006);
+  const underfelt = extrudeAcrossX(under, HAMMER.width + 0.0006, detail);
 
   // Mount on the shank tip, tilted so the felt lands square on the strings.
   for (const g of [moulding, felt, underfelt]) {

@@ -1,6 +1,10 @@
 node_modules/
 web/dist/
 out/
+# Generated audio, for every section (data/, data/30-60/, ...)
+data/**/clip.wav
+data/**/stems/
+data/**/check*.wav
 data/clip.wav
 data/stems/
 data/check*.wav

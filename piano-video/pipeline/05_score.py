@@ -13,7 +13,7 @@ import verovio
 from music21 import chord, clef, dynamics, expressions, key, layout, metadata, meter, note, pitch, stream
 from pypdf import PdfReader, PdfWriter
 
-from common import NOTES, SCORE_PDF, SCORE_XML
+from common import NOTES, SCORE_PDF, SCORE_XML, label
 
 GRID = 4  # subdivisions per beat (sixteenths)
 SPLIT = 60  # middle C and above go to the right hand
@@ -64,7 +64,7 @@ def build_score(perf: dict) -> stream.Score:
     score = stream.Score()
     score.metadata = metadata.Metadata()
     score.metadata.title = "While You Sleep"
-    score.metadata.movementName = "While You Sleep · piano, 0:00–0:30 (draft transcription)"
+    score.metadata.movementName = f"While You Sleep · piano, {label()} (draft transcription)"
     score.metadata.composer = "sonikalkebulan"
 
     key_sig = key.KeySignature(1)  # E minor / G major

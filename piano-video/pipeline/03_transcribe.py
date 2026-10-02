@@ -7,7 +7,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from common import CLIP, DATA, RAW_MIDI, STEMS
+from common import CLIP, RAW_MIDI, STEMS
 
 TRANSKUN = Path(sys.executable).with_name("transkun")
 
@@ -19,4 +19,4 @@ def transcribe(audio: Path, out: Path) -> None:
 
 transcribe(STEMS / "piano.wav", RAW_MIDI)
 if "--with-mix" in sys.argv:
-    transcribe(CLIP, DATA / "stems" / "mix.mid")
+    transcribe(CLIP, STEMS / "mix.mid")

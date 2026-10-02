@@ -1,3 +1,5 @@
+import { JourneyFilm } from "./journey/film";
+import { LEVEL_FACTORIES } from "./journey/levels";
 import { PianoScene } from "./scene";
 import type { Performance } from "./timeline";
 
@@ -12,8 +14,27 @@ declare global {
 const params = new URLSearchParams(location.search);
 const renderMode = params.has("render");
 
+/** Cut 2, the dive. Render mode only: fixed size, driven frame by frame. */
+async function journey(perf: Performance) {
+  const canvas = document.querySelector<HTMLCanvasElement>("#stage")!;
+  const w = Number(params.get("w") ?? 1920);
+  const h = Number(params.get("h") ?? 1080);
+  canvas.style.width = `${w}px`;
+  canvas.style.height = `${h}px`;
+  document.body.classList.add("render", "journey");
+  const film = new JourneyFilm(canvas, document.querySelector("#frame")!, perf, w, h, LEVEL_FACTORIES);
+  window.renderAt = (t) => film.renderAt(t);
+  (window as unknown as { __film: JourneyFilm }).__film = film;
+  window.pianoInfo = { duration: perf.duration, shots: [] };
+  film.renderAt(Number(params.get("t") ?? 0));
+  window.pianoReady = true;
+}
+
 async function main() {
-  const perf: Performance = await (await fetch("notes.json")).json();
+  const data = params.get("data");
+  const perf: Performance = await (await fetch(data ? `${data}/notes.json` : "notes.json")).json();
+  if (params.get("film") === "journey") return journey(perf);
+
   const canvas = document.querySelector<HTMLCanvasElement>("#stage")!;
   const scene = new PianoScene(canvas, perf, { antialias: params.get("aa") !== "0" });
 

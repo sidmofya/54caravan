@@ -11,6 +11,17 @@ import { Timeline, type KeyState, type Performance } from "./timeline";
 
 const PEDAL_TRAVEL = 0.16; // radians the sustain pedal dips
 
+/** The renderer settings both films share. */
+export function createRenderer(canvas: HTMLCanvasElement, antialias = true): THREE.WebGLRenderer {
+  const r = new THREE.WebGLRenderer({ canvas, antialias, preserveDrawingBuffer: true });
+  r.outputColorSpace = THREE.SRGBColorSpace;
+  r.toneMapping = THREE.ACESFilmicToneMapping;
+  r.toneMappingExposure = 1.05;
+  r.shadowMap.enabled = true;
+  r.shadowMap.type = THREE.PCFShadowMap;
+  return r;
+}
+
 export class PianoScene {
   readonly renderer: THREE.WebGLRenderer;
   readonly scene = new THREE.Scene();
@@ -22,16 +33,15 @@ export class PianoScene {
   private readonly strings = buildStrings();
   private readonly cabinet = buildCabinet();
 
-  constructor(canvas: HTMLCanvasElement, perf: Performance, opts: { antialias?: boolean } = {}) {
+  constructor(
+    target: HTMLCanvasElement | THREE.WebGLRenderer,
+    perf: Performance,
+    opts: { antialias?: boolean; director?: Director } = {},
+  ) {
     this.timeline = new Timeline(perf);
-    this.director = new Director(perf);
+    this.director = opts.director ?? new Director(perf);
 
-    const r = new THREE.WebGLRenderer({ canvas, antialias: opts.antialias ?? true, preserveDrawingBuffer: true });
-    r.outputColorSpace = THREE.SRGBColorSpace;
-    r.toneMapping = THREE.ACESFilmicToneMapping;
-    r.toneMappingExposure = 1.05;
-    r.shadowMap.enabled = true;
-    r.shadowMap.type = THREE.PCFShadowMap;
+    const r = target instanceof THREE.WebGLRenderer ? target : createRenderer(target, opts.antialias ?? true);
     this.renderer = r;
 
     this.scene.background = new THREE.Color(0x0d0a08);
@@ -97,6 +107,19 @@ export class PianoScene {
 
   /** Pose the whole piano and camera for time t and draw one frame. */
   renderAt(t: number) {
+    this.pose(t);
+    const pose = this.director.pose(t);
+    this.camera.position.copy(pose.position);
+    this.camera.lookAt(pose.target);
+    if (this.camera.fov !== pose.fov) {
+      this.camera.fov = pose.fov;
+      this.camera.updateProjectionMatrix();
+    }
+    this.renderer.render(this.scene, this.camera);
+  }
+
+  /** Set every key, hammer, damper, string and the pedal for performance time t. */
+  pose(t: number) {
     const states: KeyState[] = [];
     for (let p = LOWEST; p <= HIGHEST; p++) states.push(this.timeline.key(p, t));
     const state = (p: number) => states[p - LOWEST];
@@ -107,14 +130,5 @@ export class PianoScene {
     this.action.update(state);
     this.strings.update(t, (p) => state(p).amplitude);
     this.cabinet.pedals[2].rotation.x = this.timeline.pedal(t) * PEDAL_TRAVEL;
-
-    const pose = this.director.pose(t);
-    this.camera.position.copy(pose.position);
-    this.camera.lookAt(pose.target);
-    if (this.camera.fov !== pose.fov) {
-      this.camera.fov = pose.fov;
-      this.camera.updateProjectionMatrix();
-    }
-    this.renderer.render(this.scene, this.camera);
   }
 }

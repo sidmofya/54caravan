@@ -29,7 +29,13 @@ export interface CameraPose {
  * hammer, pull out as the verse arrives, then repeat the in-and-out around
  * the left hand before a final pull back.
  */
-const PLAN: { bars: number; kind: ShotKind; move: number }[] = [
+export interface PlanStep {
+  bars: number;
+  kind: ShotKind;
+  move: number;
+}
+
+const PLAN: PlanStep[] = [
   { bars: 1, kind: "wide", move: 0 },
   { bars: 1, kind: "keys", move: 0 },
   { bars: 1, kind: "action", move: 1.1 },
@@ -58,16 +64,23 @@ export class Director {
   private readonly focus: Float32Array; // smoothed centre pitch, sampled at FOCUS_RATE
   private static readonly FOCUS_RATE = 30;
 
-  constructor(private readonly perf: Performance) {
+  /**
+   * `plan` replaces the default shot plan; `from` starts it at the first
+   * downbeat at or after that time (the journey film hands over mid-song).
+   */
+  constructor(
+    private readonly perf: Performance,
+    opts: { plan?: PlanStep[]; from?: number } = {},
+  ) {
     this.focus = this.buildFocus();
-    this.buildShots();
+    this.buildShots(opts.plan ?? PLAN, opts.from ?? 0);
   }
 
-  private buildShots() {
+  private buildShots(plan: PlanStep[], from: number) {
     const bars = this.perf.downbeats;
-    let i = 0;
-    let start = 0;
-    for (const step of PLAN) {
+    let i = Math.max(bars.findIndex((b) => b >= from - 0.01), 0);
+    let start = from;
+    for (const step of plan) {
       const endBar = i + step.bars;
       const end = endBar < bars.length ? bars[endBar] - CUT_LEAD : this.perf.duration + 1;
       const shot: Shot = { kind: step.kind, start, end, move: step.move };

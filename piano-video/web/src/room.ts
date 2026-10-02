@@ -1,16 +1,10 @@
 import * as THREE from "three";
 import { materials as M, slab } from "./piano/materials";
+import { rng } from "./rng";
 
 // A warm living room like the reference photo: plank floor, cream wall,
 // patterned rug, floor lamp, potted plant, a framed picture and a bookcase.
 
-/** Deterministic pseudo-random numbers so every render matches. */
-function rng(seed: number) {
-  return () => {
-    seed = (seed * 1664525 + 1013904223) >>> 0;
-    return seed / 4294967296;
-  };
-}
 
 function canvasTexture(w: number, h: number, draw: (c: CanvasRenderingContext2D) => void) {
   const canvas = document.createElement("canvas");

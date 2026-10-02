@@ -9,8 +9,9 @@ import json
 
 import numpy as np
 import pretty_midi
+import soundfile as sf
 
-from common import DURATION, NOTES, RAW_MIDI
+from common import DURATION, NOTES, RAW_MIDI, STEMS
 
 BEATS_PER_BAR = 4
 MIN_DURATION = 0.03
@@ -94,8 +95,27 @@ def fit_downbeats(groups: list[dict]) -> list[float]:
             out.append(hit)
         else:
             out.append(pred)
+    # A section starting mid-song needs bars before its first bass chord too.
+    first_bar = out[1] - out[0] if len(out) > 1 else bar
+    while out[0] > 0:
+        out.insert(0, out[0] - first_bar)
     print(f"bar {bar:.3f}s -> {60 * BEATS_PER_BAR / bar:.1f} BPM, first downbeat {out[0]:.2f}s")
     return out
+
+
+def bar_vocal_energy(downbeats: list[float]) -> list[float]:
+    """Mean vocal loudness in each bar (0..1), to find where the chorus lands."""
+    path = STEMS / "vocals.wav"
+    if not path.exists():
+        return []
+    audio, sr = sf.read(str(path))
+    mono = audio.mean(axis=1) if audio.ndim > 1 else audio
+    energy = []
+    for a, b in zip(downbeats, downbeats[1:]):
+        seg = mono[max(int(a * sr), 0) : max(int(b * sr), 0)]
+        energy.append(float(np.sqrt(np.mean(seg**2))) if len(seg) else 0.0)
+    peak = max(energy) or 1.0
+    return [round(e / peak, 3) for e in energy]
 
 
 def beats_from(downbeats: list[float]) -> list[float]:
@@ -126,6 +146,7 @@ def main() -> None:
         "beatsPerBar": BEATS_PER_BAR,
         "beats": [round(b, 4) for b in beats if b <= DURATION + 1],
         "downbeats": [round(b, 4) for b in downbeats if b <= DURATION + 1],
+        "barVocal": bar_vocal_energy([b for b in downbeats if b <= DURATION + 1]),
         "notes": [
             {"p": n["p"], "on": round(n["on"], 4), "off": round(n["off"], 4), "v": n["v"], "vel": n["vel"]}
             for n in notes

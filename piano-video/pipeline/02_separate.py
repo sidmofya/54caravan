@@ -10,9 +10,8 @@ import sys
 
 from audio_separator.separator import Separator
 
-from common import CLIP, STEMS
+from common import CLIP, MODELS, STEMS
 
-MODELS = STEMS / "models"
 PIANO = STEMS / "piano.wav"
 INSTRUMENTAL = STEMS / "instrumental.wav"
 

@@ -15,6 +15,12 @@
       body.render #bar { display: none; }
       body.render #stage { height: auto; }
       #frame { position: relative; }
+      #readout { display: none; position: absolute; left: 64px; bottom: 56px; pointer-events: none;
+        color: #efe3cc; font-family: Georgia, "Times New Roman", serif; text-shadow: 0 1px 12px rgba(0,0,0,0.7); }
+      body.journey #readout { display: block; }
+      #readout .scale { font-size: 40px; letter-spacing: 0.02em; }
+      #readout .name { font-size: 22px; font-style: italic; opacity: 0.9; margin-top: 4px; }
+      #readout .time { font-size: 15px; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.6; margin-top: 10px; }
       #vignette { position: absolute; inset: 0; pointer-events: none;
         background: radial-gradient(ellipse 75% 70% at 50% 48%, transparent 55%, rgba(8,5,3,0.55) 100%); }
     </style>

@@ -11,7 +11,7 @@ import librosa
 import numpy as np
 import soundfile as sf
 
-from common import DATA, NOTES, STEMS
+from common import NOTES, OUT, STEMS
 
 SR = 44100
 DAMPER_FALL = 0.035
@@ -77,15 +77,15 @@ def main() -> None:
     synth = synthesize(perf, len(stem) / SR)
     stem = stem / (np.abs(stem).max() + 1e-9) * 0.8
 
-    sf.write(str(DATA / "check.wav"), np.stack([stem, synth], axis=1), SR)
-    sf.write(str(DATA / "check_synth.wav"), synth, SR)
+    sf.write(str(OUT / "check.wav"), np.stack([stem, synth], axis=1), SR)
+    sf.write(str(OUT / "check_synth.wav"), synth, SR)
 
     median_ms, within = onset_alignment(perf, stem)
     print(f"notes: {len(perf['notes'])}, pitch range {min(n['p'] for n in perf['notes'])}-"
           f"{max(n['p'] for n in perf['notes'])}")
     print(f"onsets: median gap to a heard onset {median_ms:.0f} ms, {within:.0f}% within 50 ms")
     print(f"harmony: chroma similarity {chroma_match(stem, synth):.2f} (1.0 = identical)")
-    print(f"listen: {DATA / 'check.wav'} (left = stem, right = transcription)")
+    print(f"listen: {OUT / 'check.wav'} (left = stem, right = transcription)")
 
 
 if __name__ == "__main__":
