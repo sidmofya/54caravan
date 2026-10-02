@@ -111,6 +111,16 @@ export class JourneyFilm {
     };
   }
 
+  /**
+   * Draw an ordinary scene through the same post-processing as the dive
+   * (multisampling, tone mapping, grain), so a film that cuts between the
+   * two has one consistent look.
+   */
+  renderView(scene: THREE.Scene, camera: THREE.PerspectiveCamera, t: number) {
+    const view: Level = { id: "piano", unitExp: 0, bloom: 0, scene, camera, update: () => {} };
+    this.compositor.render(view, null, 0, { blur: 0, seed: (t * 30) % 97 });
+  }
+
   /** Update only the scale readout, for frames another film draws. */
   readoutAt(t: number) {
     const b = this.ch.blend(this.ch.L(t));

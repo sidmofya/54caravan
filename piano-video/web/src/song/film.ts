@@ -79,7 +79,7 @@ export class SongFilm {
     this.journey.readoutAt(t);
 
     if (section.name === "story") {
-      this.story.renderAt(t);
+      this.journey.renderView(this.story.piano.scene, this.story.prepare(t), t);
       return;
     }
     // Before her scene the room waits: door shut, nobody there.
@@ -99,6 +99,6 @@ export class SongFilm {
       cam.fov = pose.fov;
       cam.updateProjectionMatrix();
     }
-    this.renderer.render(piano.scene, cam);
+    this.journey.renderView(piano.scene, cam, t);
   }
 }

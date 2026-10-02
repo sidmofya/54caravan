@@ -192,6 +192,9 @@ export class Choreography {
     const s = this.strikeTime;
     const t0 = opts.startTime ?? s - 1.6;
     const zoom: Key[] = [
+      // A flat key before the start, so the dive eases in from rest (no jolt
+      // or sudden zoom blur where verse 2's camera hands over).
+      { t: t0 - 1, v: opts.startL },
       { t: t0, v: opts.startL },
       { t: s - 0.5, v: -0.95 },
       { t: s, v: -1.2 },

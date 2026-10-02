@@ -50,6 +50,11 @@ export class StoryFilm {
 
   /** Draw the frame for performance time `tp`. */
   renderAt(tp: number) {
+    this.piano.renderer.render(this.piano.scene, this.prepare(tp));
+  }
+
+  /** Pose everything and the camera for performance time `tp`; returns the camera to draw with. */
+  prepare(tp: number): THREE.PerspectiveCamera {
     const t = tp + this.offset;
     this.piano.pose(tp);
     this.performer.pose(t);
@@ -73,7 +78,6 @@ export class StoryFilm {
     room.sky.color.copy(this.night).lerp(this.morning, dawn);
     room.dawn.intensity = 1.4 * dawn;
     this.piano.renderer.toneMappingExposure = EXPOSURE * (1 - smooth((t - FADE.from) / (FADE.to - FADE.from)));
-
-    this.piano.renderer.render(this.piano.scene, cam);
+    return cam;
   }
 }
