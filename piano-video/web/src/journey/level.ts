@@ -32,6 +32,7 @@ export interface FrameContext {
   aspect: number;
   height: number; // frame height in pixels, for sizing points
   diving: boolean; // false during the rush back out
+  vocal: number; // how loud the singing is, 0..~1.2 (0 where unknown)
 }
 
 /** One scale of the dive: its own scene, in its own units, with its own camera. */

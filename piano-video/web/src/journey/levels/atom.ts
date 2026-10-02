@@ -172,6 +172,7 @@ export class AtomLevel implements Level {
   private readonly uniforms: Record<string, THREE.IUniform>;
   private readonly photons: THREE.Points;
   private readonly core: THREE.Sprite;
+  private readonly cloud: THREE.Points;
 
   constructor(private readonly ch: Choreography) {
     this.scene.background = new THREE.Color(0x020309);
@@ -218,6 +219,7 @@ export class AtomLevel implements Level {
     );
     cloud.frustumCulled = false;
     this.scene.add(cloud);
+    this.cloud = cloud;
 
     // The nucleus: far too small to see, marked by a pinprick of light.
     this.core = new THREE.Sprite(
@@ -261,7 +263,10 @@ export class AtomLevel implements Level {
     const k = Math.floor(step);
     const env = Math.sin(Math.PI * (step - k)) ** 2;
     gains[TOUR[((k % TOUR.length) + TOUR.length) % TOUR.length]] += 2.6 * env;
-    u.uOrb.value = gains;
+    // The singing swells the whole cloud: brighter and a touch larger on each phrase.
+    const voice = Math.min(ctx.vocal, 1.2);
+    u.uOrb.value = gains.map((g) => g * (0.8 + 0.45 * voice));
+    this.cloud.scale.setScalar(1 + 0.06 * voice);
 
     // Photon dashes: each recent note sends one outward, along a direction set by its pitch.
     const pos = this.photons.geometry.attributes.position as THREE.BufferAttribute;

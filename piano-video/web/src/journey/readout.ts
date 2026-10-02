@@ -51,11 +51,13 @@ export class Readout {
     const landed = t >= ch.landing;
     const exp = Math.round(L);
     this.scale.textContent = `10${sup(exp)} m`;
-    this.name.textContent = subject(level, L, landed);
+    // Chorus 2 lands in the room as the door opens, not on the keys.
+    const name = subject(level, L, landed);
+    this.name.textContent = landed && "peakBar" in ch.opts.cues ? "back in the room" : name;
     const S = ch.S(t);
     this.time.textContent = S >= 0.5 ? `time slowed 10${sup(Math.round(S))}×` : "";
     // Fade in after the opening beat, out a little after landing.
-    const fadeIn = Math.min(Math.max((t - 0.4) / 0.8, 0), 1);
+    const fadeIn = Math.min(Math.max((t - (ch.opts.startTime ?? 0) - 0.4) / 0.8, 0), 1);
     const fadeOut = 1 - Math.min(Math.max((t - ch.landing - 1.6) / 1.2, 0), 1);
     this.el.style.opacity = String(fadeIn * fadeOut);
   }

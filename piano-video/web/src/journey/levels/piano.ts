@@ -2,7 +2,7 @@
 // left off, closes on the featured hammer, and catches us on the way out.
 
 import * as THREE from "three";
-import { Director, type PlanStep } from "../../director";
+import { Director, type CameraPose, type PlanStep } from "../../director";
 import { HAMMER, hammerX, strikeAngle } from "../../piano/layout";
 import { PianoScene } from "../../scene";
 import type { Performance } from "../../timeline";
@@ -21,7 +21,13 @@ export const ABOVE_DIR = new THREE.Vector3(-0.5, 0.85, 0.15).normalize();
 export const SIDE_DIR = new THREE.Vector3(-1, 0.2, 0.1).normalize();
 
 /** Cut 1 ends on this pose (director "outro" at its last frame). */
-const START = { position: new THREE.Vector3(0.85, 1.5, 3.7), target: new THREE.Vector3(0.05, 0.88, 0), fov: 32 };
+export const CUT1_END: CameraPose = { position: new THREE.Vector3(0.85, 1.5, 3.7), target: new THREE.Vector3(0.05, 0.88, 0), fov: 32 };
+
+/** Where the dive opens, and the camera once it has landed. */
+export interface PianoShots {
+  start: CameraPose;
+  after: (t: number) => CameraPose;
+}
 
 /** After landing on the keys, the coda's shots. */
 const CODA: PlanStep[] = [
@@ -55,13 +61,13 @@ function slerpDir(a: THREE.Vector3, b: THREE.Vector3, u: number) {
 }
 
 /** log10 of the frame width at the target for a camera pose. */
-function poseL(position: THREE.Vector3, target: THREE.Vector3, fov: number, aspect: number): number {
+export function poseL(position: THREE.Vector3, target: THREE.Vector3, fov: number, aspect: number): number {
   const cam = new THREE.PerspectiveCamera(fov, aspect);
   return Math.log10(position.distanceTo(target) / distanceFor(1, cam, aspect));
 }
 
-/** Frame width (log10 m) of the start pose, so cut 2 opens exactly where cut 1 ended. */
-export const startL = (aspect: number) => poseL(START.position, START.target, START.fov, aspect);
+/** Frame width (log10 m) of a pose, so the dive opens exactly where the shot before ended. */
+export const startL = (aspect: number, start: CameraPose = CUT1_END) => poseL(start.position, start.target, start.fov, aspect);
 
 export class PianoLevel implements Level {
   readonly id = "piano" as const;
@@ -70,7 +76,6 @@ export class PianoLevel implements Level {
   readonly scene: THREE.Scene;
   readonly camera = new THREE.PerspectiveCamera(32, 16 / 9, 0.004, 40);
   readonly piano: PianoScene;
-  readonly director: Director;
   private readonly contact: THREE.Vector3;
 
   /** The coda's director: lands on the keys at `landing` and plays out the section. */
@@ -82,17 +87,23 @@ export class PianoLevel implements Level {
     renderer: THREE.WebGLRenderer,
     perf: Performance,
     private readonly ch: Choreography,
-    director: Director,
+    private readonly shots: PianoShots,
+    piano?: PianoScene,
   ) {
-    this.director = director;
-    this.piano = new PianoScene(renderer, perf, { director: this.director });
+    this.piano = piano ?? new PianoScene(renderer, perf);
     this.scene = this.piano.scene;
     this.contact = strikePoint(ch.strike.p);
   }
 
+  /** Cut 2's camera: opens on cut 1's last frame, lands into the coda's shots. */
+  static cut2Shots(perf: Performance, landing: number): PianoShots {
+    const coda = PianoLevel.codaDirector(perf, landing);
+    return { start: CUT1_END, after: (t) => coda.pose(t) };
+  }
+
   /** Frame width (log10 m) of the shot we land on. */
-  static landL(director: Director, landing: number, aspect: number): number {
-    const pose = director.pose(landing);
+  static landL(shots: PianoShots, landing: number, aspect: number): number {
+    const pose = shots.after(landing);
     return poseL(pose.position, pose.target, pose.fov, aspect);
   }
 
@@ -102,7 +113,7 @@ export class PianoLevel implements Level {
     const width = Math.pow(10, ctx.L);
 
     if (ctx.t >= this.ch.landing) {
-      const pose = this.director.pose(ctx.t);
+      const pose = this.shots.after(ctx.t);
       cam.fov = pose.fov;
       cam.aspect = ctx.aspect;
       cam.near = 0.004;
@@ -114,6 +125,7 @@ export class PianoLevel implements Level {
       return;
     }
 
+    const START = this.shots.start;
     const startDir = START.position.clone().sub(START.target).normalize();
     if (ctx.diving) {
       // Close in on the strike point: aim at it early, swing round to the
@@ -131,7 +143,7 @@ export class PianoLevel implements Level {
       aim(cam, target, dir, width, ctx.aspect);
     } else {
       // Rushing back out: from the strike point to the opening shot of the coda.
-      const pose = this.director.pose(this.ch.landing);
+      const pose = this.shots.after(this.ch.landing);
       const landDir = pose.position.clone().sub(pose.target).normalize();
       const prog = ease((ctx.L + 1.9) / (this.ch.opts.landL + 1.9));
       const target = this.contact.clone().lerp(pose.target, prog);

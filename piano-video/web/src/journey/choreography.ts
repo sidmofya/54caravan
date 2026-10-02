@@ -33,6 +33,27 @@ export interface SectionCues {
   landBar: number; // back on the keys
 }
 
+/** Bars for chorus 2 (1:52-2:32 in the 60-209 data): a quick plunge, then a stay in the atom. */
+export interface AtomCues {
+  strikeBar: number; // the plunge's hammer strikes on this downbeat
+  quietBar: number; // the breakdown: drift deeper
+  returnBar: number; // the band comes back
+  peakBar: number; // the loudest bar: a glimpse of the nucleus
+  backBar: number; // back out to the atom
+  rushBar: number;
+  landBar: number;
+}
+
+export const CUES_CHORUS_2: AtomCues = {
+  strikeBar: 24,
+  quietBar: 30,
+  returnBar: 32,
+  peakBar: 36,
+  backBar: 38,
+  rushBar: 41,
+  landBar: 42,
+};
+
 export const CUES_30_60: SectionCues = {
   strikeBar: 2,
   contactBar: 4,
@@ -112,10 +133,14 @@ const smoothstep = (e0: number, e1: number, x: number) => {
 };
 
 export interface ChoreographyOptions {
-  cues: SectionCues;
-  startL: number; // frame width at t = 0 (matches the end of the previous cut)
+  cues: SectionCues | AtomCues;
+  startL: number; // frame width when the dive opens (matches the shot before)
   landL: number; // frame width of the shot we land on
+  /** When the dive opens; cut 2 opens at 0. */
+  startTime?: number;
 }
+
+const isAtom = (c: SectionCues | AtomCues): c is AtomCues => "peakBar" in c;
 
 export class Choreography {
   readonly strike: Note;
@@ -137,8 +162,78 @@ export class Choreography {
     const s = (this.strikeTime = this.strike.on);
     this.rushStart = db[c.rushBar] + 0.15;
     this.landing = db[c.landBar];
+    if (isAtom(c)) {
+      const keys = this.atomKeys(c, opts);
+      this.zoom = new Curve(keys.zoom);
+      this.slow = new Curve(keys.slow);
+    } else {
+      const keys = this.diveKeys(c, opts);
+      this.zoom = new Curve(keys.zoom);
+      this.slow = new Curve(keys.slow);
+    }
 
-    this.zoom = new Curve([
+    // Physical milliseconds since the strike: the integral of the slowed rate.
+    const rate = Choreography.PHYS_RATE;
+    const n = Math.ceil((perf.duration + 1 - s) * rate) + 1;
+    this.physTable = new Float64Array(n);
+    for (let i = 1; i < n; i++) {
+      const t = s + (i - 0.5) / rate;
+      this.physTable[i] = this.physTable[i - 1] + (1000 / rate) * Math.pow(10, -this.S(t));
+    }
+  }
+
+  /**
+   * Chorus 2: a quick plunge through the scales cut 2 took time over, then a
+   * stay in the iron atom that follows the song: deeper in the breakdown, a
+   * glimpse of the nucleus on the loudest bar, and the rush back out.
+   */
+  private atomKeys(c: AtomCues, opts: ChoreographyOptions) {
+    const db = this.perf.downbeats;
+    const s = this.strikeTime;
+    const t0 = opts.startTime ?? s - 1.6;
+    const zoom: Key[] = [
+      { t: t0, v: opts.startL },
+      { t: s - 0.5, v: -0.95 },
+      { t: s, v: -1.2 },
+      { t: s + 0.7, v: -1.75 },
+      { t: s + 1.4, v: -2.6 },
+      { t: s + 2.0, v: -3.05 },
+      { t: s + 2.8, v: -4.3 },
+      { t: s + 3.6, v: -6.9 },
+      { t: s + 4.3, v: -8.1 },
+      { t: s + 5.0, v: -9.1 },
+      { t: s + 6.0, v: -10.1 },
+      { t: db[c.quietBar], v: -10.35 },
+      { t: db[c.returnBar] - 0.3, v: -10.9 },
+      { t: db[c.returnBar] + 0.6, v: -10.55 },
+      { t: db[c.peakBar] - 0.8, v: -10.65 },
+      { t: db[c.peakBar] + 0.5, v: -12.3 },
+      { t: db[c.peakBar + 1], v: -12.4 },
+      { t: db[c.backBar], v: -10.5 },
+      { t: this.rushStart, v: -10.7 },
+      { t: this.landing, v: opts.landL },
+    ];
+    const slow: Key[] = [
+      { t: s, v: 2.6 },
+      { t: s + 1.0, v: 2.9 },
+      { t: s + 2.0, v: 4.2 },
+      { t: s + 3.0, v: 6 },
+      { t: s + 4.3, v: 9 },
+      { t: s + 6.0, v: 12 },
+      { t: db[c.peakBar], v: 13 },
+      { t: this.rushStart, v: 12.5 },
+      { t: this.rushStart + 1.1, v: 6 },
+      { t: this.landing - 0.3, v: 2 },
+      { t: this.landing, v: 0 },
+    ];
+    return { zoom, slow };
+  }
+
+  /** Cut 2: a slow dive all the way to a proton, and the rush back out. */
+  private diveKeys(c: SectionCues, opts: ChoreographyOptions) {
+    const db = this.perf.downbeats;
+    const s = this.strikeTime;
+    const zoom: Key[] = [
       { t: 0, v: opts.startL },
       { t: s - 0.7, v: -0.95 },
       { t: s, v: -1.2 },
@@ -156,11 +251,11 @@ export class Choreography {
       { t: db[c.protonBar], v: -14.45 },
       { t: this.rushStart, v: -14.62 },
       { t: this.landing, v: opts.landL },
-    ]);
+    ];
 
     // Slow-motion factor as a power of ten. It jumps at the strike (time all
     // but stops at impact), deepens with the dive, and unwinds in the rush.
-    this.slow = new Curve([
+    const slow: Key[] = [
       { t: s, v: 2.6 },
       { t: s + 1.04, v: 2.9 },
       { t: s + 2.54, v: 3.3 },
@@ -174,16 +269,8 @@ export class Choreography {
       { t: this.rushStart + 1.1, v: 12 },
       { t: this.landing - 0.3, v: 2 },
       { t: this.landing, v: 0 },
-    ]);
-
-    // Physical milliseconds since the strike: the integral of the slowed rate.
-    const rate = Choreography.PHYS_RATE;
-    const n = Math.ceil((perf.duration + 1 - s) * rate) + 1;
-    this.physTable = new Float64Array(n);
-    for (let i = 1; i < n; i++) {
-      const t = s + (i - 0.5) / rate;
-      this.physTable[i] = this.physTable[i - 1] + (1000 / rate) * Math.pow(10, -this.S(t));
-    }
+    ];
+    return { zoom, slow };
   }
 
   /** The hammer we dive into: the loudest mid-keyboard note struck in the strike bar. */

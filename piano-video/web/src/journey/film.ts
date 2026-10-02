@@ -2,13 +2,26 @@
 // to a proton, and back out to the keys.
 
 import * as THREE from "three";
-import { createRenderer } from "../scene";
+import type { CameraPose } from "../director";
+import { createRenderer, type PianoScene } from "../scene";
 import type { Performance } from "../timeline";
-import { Choreography, CUES_30_60, type LevelId } from "./choreography";
+import { Choreography, CUES_30_60, type AtomCues, type LevelId, type SectionCues } from "./choreography";
 import { Compositor } from "./compositor";
 import type { FrameContext, Level } from "./level";
-import { PianoLevel, startL } from "./levels/piano";
+import { PianoLevel, startL, type PianoShots } from "./levels/piano";
 import { Readout } from "./readout";
+
+/** A dive set somewhere in the song: which bars, and the shots either side of it. */
+export interface JourneySection {
+  cues: SectionCues | AtomCues;
+  /** The dive opens on this camera pose, at this performance time. */
+  start: CameraPose;
+  startTime: number;
+  /** The camera once landed, by time. */
+  after: (t: number) => CameraPose;
+  /** The song's piano scene, shared rather than built again. */
+  piano?: PianoScene;
+}
 
 export type LevelFactory = (ctx: { renderer: THREE.WebGLRenderer; ch: Choreography; perf: Performance }) => Level;
 
@@ -37,29 +50,35 @@ export class JourneyFilm {
   private readonly height: number;
 
   constructor(
-    canvas: HTMLCanvasElement,
+    target: HTMLCanvasElement | THREE.WebGLRenderer,
     overlay: HTMLElement,
     private readonly perf: Performance,
     width: number,
     height: number,
     factories: Partial<Record<LevelId, LevelFactory>> = {},
+    section?: JourneySection,
   ) {
     this.aspect = width / height;
     this.height = height;
-    // Antialiasing happens in the multisampled render targets instead.
-    this.renderer = createRenderer(canvas, false);
-    this.renderer.setSize(width, height, false);
+    if (target instanceof THREE.WebGLRenderer) {
+      this.renderer = target;
+    } else {
+      // Antialiasing happens in the multisampled render targets instead.
+      this.renderer = createRenderer(target, false);
+      this.renderer.setSize(width, height, false);
+    }
 
-    const cues = CUES_30_60;
+    const cues = section?.cues ?? CUES_30_60;
     const landing = perf.downbeats[cues.landBar];
-    const director = PianoLevel.codaDirector(perf, landing);
+    const shots: PianoShots = section ? { start: section.start, after: section.after } : PianoLevel.cut2Shots(perf, landing);
     this.ch = new Choreography(perf, {
       cues,
-      startL: startL(this.aspect),
-      landL: PianoLevel.landL(director, landing, this.aspect),
+      startL: startL(this.aspect, shots.start),
+      landL: PianoLevel.landL(shots, landing, this.aspect),
+      startTime: section?.startTime,
     });
 
-    this.levels.set("piano", new PianoLevel(this.renderer, perf, this.ch, director));
+    this.levels.set("piano", new PianoLevel(this.renderer, perf, this.ch, shots, section?.piano));
     for (const [id, make] of Object.entries(factories) as [LevelId, LevelFactory][]) {
       this.levels.set(id, make({ renderer: this.renderer, ch: this.ch, perf }));
     }
@@ -88,7 +107,14 @@ export class JourneyFilm {
       aspect: this.aspect,
       height: this.height,
       diving: t < ch.rushStart,
+      vocal: this.perf.vocalEnv?.[Math.round(t * 30)] ?? 0,
     };
+  }
+
+  /** Update only the scale readout, for frames another film draws. */
+  readoutAt(t: number) {
+    const b = this.ch.blend(this.ch.L(t));
+    this.readout.update(this.ch, t, b.inner && b.mix > 0.5 ? b.inner : b.outer);
   }
 
   renderAt(t: number) {

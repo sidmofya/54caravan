@@ -22,6 +22,8 @@ export interface Performance {
   downbeats: number[];
   notes: Note[];
   pedal: Pedal[];
+  /** Vocal loudness 0..~1.2 at 30 Hz, where the pipeline measured it. */
+  vocalEnv?: number[];
 }
 
 const KEY_RELEASE = 0.07; // seconds for a key to rise

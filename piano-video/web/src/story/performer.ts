@@ -148,6 +148,8 @@ export class Performer {
     const on = this.visible(t);
     this.pianist.rig.root.visible = on;
     this.pianist.group.visible = on;
+    // The stool comes in with her; before that the room has none.
+    this.stool.visible = t > STORY.door;
     if (!on) {
       if (t >= STORY.gone) this.placeStool(PLACES.stool, 0);
       return;

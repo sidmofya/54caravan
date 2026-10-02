@@ -5,7 +5,7 @@ import * as THREE from "three";
 import { HAMMER, KEY_FRONT, STRIKE_Y, WHITE_TOP, hammerX, keyX, LOWEST, HIGHEST } from "./piano/layout";
 import type { Note, Performance } from "./timeline";
 
-export type ShotKind = "wide" | "medium" | "keys" | "action" | "row" | "macro" | "outro";
+export type ShotKind = "wide" | "medium" | "keys" | "action" | "row" | "macro" | "outro" | "doorway" | "overhead" | "pedal" | "window";
 
 export interface Shot {
   kind: ShotKind;
@@ -48,6 +48,27 @@ const PLAN: PlanStep[] = [
   { bars: 2, kind: "row", move: 0 },
   { bars: 1, kind: "keys", move: 0 },
   { bars: 99, kind: "outro", move: 1.6 },
+];
+
+/**
+ * Verse 2 (1:00-1:52): the piano alone again, with shots cut 1 didn't use.
+ * The doorway wide shows the bedroom door before anyone comes through it.
+ */
+export const VERSE_2: PlanStep[] = [
+  { bars: 2, kind: "doorway", move: 0 },
+  { bars: 1, kind: "keys", move: 0 },
+  { bars: 2, kind: "overhead", move: 0 },
+  { bars: 1, kind: "action", move: 1.2 },
+  { bars: 1, kind: "pedal", move: 0 },
+  { bars: 2, kind: "window", move: 0 },
+  { bars: 1, kind: "row", move: 0 },
+  { bars: 1, kind: "keys", move: 0 },
+  { bars: 1, kind: "macro", move: 0 },
+  { bars: 2, kind: "overhead", move: 0 },
+  { bars: 2, kind: "doorway", move: 0 },
+  { bars: 1, kind: "keys", move: 0 },
+  { bars: 1, kind: "action", move: 1.2 },
+  { bars: 99, kind: "medium", move: 2.0 },
 ];
 
 /** Cuts land this long before the downbeat, so the first strike is seen in flight. */
@@ -177,7 +198,8 @@ export class Director {
   }
 
   private driftScale(kind: ShotKind) {
-    return kind === "macro" ? 0.0006 : kind === "wide" || kind === "medium" || kind === "outro" ? 0.006 : 0.0018;
+    if (kind === "macro") return 0.0006;
+    return kind === "wide" || kind === "medium" || kind === "outro" || kind === "doorway" || kind === "window" ? 0.006 : 0.0018;
   }
 
   /** Pose for one shot at time t (u runs 0..1 across the shot). */
@@ -230,6 +252,33 @@ export class Director {
           fov: 42,
         };
       }
+      case "doorway":
+        // From the far corner: the piano on the right, the bedroom door on the left.
+        return {
+          position: v(lerp(1.95, 1.8, ease(u)), lerp(1.6, 1.55, u), lerp(4.2, 4.0, ease(u))),
+          target: v(lerp(-1.05, -1.35, ease(u)), 1.0, lerp(0.85, 1.05, ease(u))),
+          fov: 40,
+        };
+      case "overhead":
+        // Looking down on the keys and over them into the hammers.
+        return {
+          position: v(kx * 0.8 + lerp(-0.05, 0.05, u), 1.78, 0.62),
+          target: v(kx * 0.85, 0.82, -0.02),
+          fov: 34,
+        };
+      case "pedal":
+        return {
+          position: v(lerp(0.5, 0.44, u), 0.2, 0.72),
+          target: v(0.02, 0.09, 0.14),
+          fov: 34,
+        };
+      case "window":
+        // Across the piano toward the curtained window and the night outside.
+        return {
+          position: v(lerp(-1.3, -1.15, ease(u)), 1.32, lerp(2.3, 2.15, ease(u))),
+          target: v(1.5, 1.2, 0.85),
+          fov: 36,
+        };
       case "macro": {
         const x = hammerX(shot.pitch ?? 64);
         return {
