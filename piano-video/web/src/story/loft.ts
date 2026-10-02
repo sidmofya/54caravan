@@ -14,6 +14,8 @@ export interface Ring {
   shape?: (theta: number) => number;
   /** Optional per-angle offset along zAxis (for a bust, a sag). */
   offset?: (theta: number) => number;
+  /** Angles the ring spans, for open cloth such as a robe's front; default a full circle. */
+  arc?: [number, number];
 }
 
 export class Loft {
@@ -24,7 +26,6 @@ export class Loft {
     readonly rings: number,
     readonly segments: number,
     material: THREE.Material,
-    opts: { capStart?: boolean; capEnd?: boolean } = {},
   ) {
     const verts = rings * (segments + 1);
     const geo = new THREE.BufferGeometry();
@@ -45,7 +46,6 @@ export class Loft {
         }
       }
     }
-    void opts;
     geo.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
     geo.setIndex(index);
     this.mesh = new THREE.Mesh(geo, material);
@@ -59,18 +59,23 @@ export class Loft {
     const tmp = new THREE.Vector3();
     for (let r = 0; r < this.rings; r++) {
       const ring = ringAt(r, r / (this.rings - 1));
+      const [a0, a1] = ring.arc ?? [0, Math.PI * 2];
       for (let s = 0; s <= this.segments; s++) {
-        const th = (s / this.segments) * Math.PI * 2;
-        const k = ring.shape ? ring.shape(th) : 1;
-        const off = ring.offset ? ring.offset(th) : 0;
-        tmp
-          .copy(ring.center)
-          .addScaledVector(ring.xAxis, Math.cos(th) * ring.rx * k)
-          .addScaledVector(ring.zAxis, Math.sin(th) * ring.rz * k + off);
+        ringPoint(ring, a0 + (s / this.segments) * (a1 - a0), tmp);
         p.setXYZ(r * (this.segments + 1) + s, tmp.x, tmp.y, tmp.z);
       }
     }
     p.needsUpdate = true;
     this.mesh.geometry.computeVertexNormals();
   }
+}
+
+/** A point on a ring at angle `theta`, by the same rule the loft uses. */
+export function ringPoint(ring: Ring, theta: number, out = new THREE.Vector3()): THREE.Vector3 {
+  const k = ring.shape ? ring.shape(theta) : 1;
+  const off = ring.offset ? ring.offset(theta) : 0;
+  return out
+    .copy(ring.center)
+    .addScaledVector(ring.xAxis, Math.cos(theta) * ring.rx * k)
+    .addScaledVector(ring.zAxis, Math.sin(theta) * ring.rz * k + off);
 }

@@ -1,6 +1,7 @@
 import { JourneyFilm } from "./journey/film";
 import { LEVEL_FACTORIES } from "./journey/levels";
 import { PianoScene } from "./scene";
+import { PortraitFilm, SHOTS } from "./story/portrait";
 import type { Performance } from "./timeline";
 
 declare global {
@@ -30,7 +31,24 @@ async function journey(perf: Performance) {
   window.pianoReady = true;
 }
 
+/** Look-development stills of the pianist; `t` picks the shot. */
+function portrait() {
+  const canvas = document.querySelector<HTMLCanvasElement>("#stage")!;
+  const w = Number(params.get("w") ?? 1920);
+  const h = Number(params.get("h") ?? 1080);
+  canvas.style.width = `${w}px`;
+  canvas.style.height = `${h}px`;
+  document.body.classList.add("render");
+  const film = new PortraitFilm(canvas, w, h);
+  window.renderAt = (t) => film.renderAt(t);
+  (window as unknown as { __film: PortraitFilm }).__film = film;
+  window.pianoInfo = { duration: SHOTS.length, shots: [] };
+  film.renderAt(Number(params.get("t") ?? 0));
+  window.pianoReady = true;
+}
+
 async function main() {
+  if (params.get("film") === "portrait") return portrait();
   const data = params.get("data");
   const perf: Performance = await (await fetch(data ? `${data}/notes.json` : "notes.json")).json();
   if (params.get("film") === "journey") return journey(perf);

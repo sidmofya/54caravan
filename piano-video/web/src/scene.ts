@@ -6,7 +6,7 @@ import { buildCabinet } from "./piano/cabinet";
 import { KEY_ANGLE, buildKeyboard } from "./piano/keyboard";
 import { HIGHEST, LOWEST } from "./piano/layout";
 import { buildStrings } from "./piano/strings";
-import { buildRoom } from "./room";
+import { buildRoom, type Room } from "./room";
 import { Timeline, type KeyState, type Performance } from "./timeline";
 
 const PEDAL_TRAVEL = 0.16; // radians the sustain pedal dips
@@ -28,6 +28,7 @@ export class PianoScene {
   readonly camera = new THREE.PerspectiveCamera(32, 16 / 9, 0.004, 40);
   readonly timeline: Timeline;
   readonly director: Director;
+  readonly room: Room = buildRoom();
   private readonly keyboard = buildKeyboard();
   private readonly action = buildAction();
   private readonly strings = buildStrings();
@@ -46,7 +47,7 @@ export class PianoScene {
 
     this.scene.background = new THREE.Color(0x0d0a08);
     this.scene.add(this.cabinet.group, this.keyboard.group, this.action.group, this.strings.group);
-    this.scene.add(buildRoom().group);
+    this.scene.add(this.room.group);
     this.addLights();
 
     // Reflections only where they show: metals and gloss lacquer. Image-based

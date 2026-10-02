@@ -23,7 +23,7 @@ export const DIM = {
   chest: 0.14,
   neck: 0.235, // chest root to neck root
   head: 0.085, // neck root to head pivot
-  shoulderWidth: 0.168,
+  shoulderWidth: 0.16,
   shoulderHeight: 0.215, // above the chest root
   upperArm: 0.28,
   foreArm: 0.235,
