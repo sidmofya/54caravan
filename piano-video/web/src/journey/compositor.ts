@@ -96,13 +96,18 @@ const radialBlurShader = {
     float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233)) + uSeed) * 43758.5453); }
     void main() {
       vec2 toCentre = vec2(0.5) - vUv;
-      vec4 col = vec4(0.0);
-      const int N = 14;
-      for (int i = 0; i < N; i++) {
-        float k = float(i) / float(N - 1);
-        col += texture2D(tDiffuse, vUv + toCentre * uStrength * k);
+      vec4 col;
+      if (uStrength < 0.002) {
+        col = texture2D(tDiffuse, vUv);
+      } else {
+        col = vec4(0.0);
+        const int N = 14;
+        for (int i = 0; i < N; i++) {
+          float k = float(i) / float(N - 1);
+          col += texture2D(tDiffuse, vUv + toCentre * uStrength * k);
+        }
+        col /= float(N);
       }
-      col /= float(N);
       // Fine film grain, different every frame but deterministic.
       col.rgb += (hash(vUv * 1000.0) - 0.5) * uGrain * (0.4 + col.rgb);
       gl_FragColor = col;
@@ -138,7 +143,7 @@ export class Compositor {
     this.levels.mix = mix;
     const b = inner ? outer.bloom * (1 - mix) + inner.bloom * mix : outer.bloom;
     this.bloom.strength = b;
-    this.bloom.enabled = b > 0.01;
+    this.bloom.enabled = b > 0.06;
     this.finish.uniforms.uStrength.value = frame.blur;
     this.finish.uniforms.uSeed.value = frame.seed;
     this.composer.render();

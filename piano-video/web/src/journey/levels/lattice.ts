@@ -64,21 +64,6 @@ const coreFragment = /* glsl */ `
     gl_FragColor = vec4(col * fog, 1.0);
   }`;
 
-const haloFragment = /* glsl */ `
-  uniform float uFog;
-  varying float vGlow;
-  varying float vDepth;
-  void main() {
-    vec2 c = gl_PointCoord * 2.0 - 1.0;
-    float r2 = dot(c, c);
-    if (r2 > 1.0) discard;
-    // The atom's outer electrons: a soft blue haze, warmed by a passing wave.
-    float a = pow(1.0 - r2, 2.0) * 0.012;
-    vec3 col = mix(vec3(0.35, 0.55, 1.0), vec3(1.0, 0.7, 0.4), clamp(vGlow, 0.0, 1.0));
-    float fog = exp(-vDepth * uFog * 3.0);
-    gl_FragColor = vec4(col * a * (1.0 + vGlow * 4.0) * fog, 1.0);
-  }`;
-
 export class LatticeLevel implements Level {
   readonly id = "lattice" as const;
   readonly unitExp = -10;
@@ -116,20 +101,8 @@ export class LatticeLevel implements Level {
       uWave: { value: Array.from({ length: MAX_WAVES }, () => new THREE.Vector4()) },
     };
     const core = new THREE.Points(geo, new THREE.ShaderMaterial({ uniforms: this.uniforms, vertexShader, fragmentShader: coreFragment }));
-    const haloUniforms = { ...this.uniforms, uSize: { value: 2.4 } };
-    const halo = new THREE.Points(
-      geo,
-      new THREE.ShaderMaterial({
-        uniforms: haloUniforms,
-        vertexShader,
-        fragmentShader: haloFragment,
-        transparent: true,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-      }),
-    );
-    core.frustumCulled = halo.frustumCulled = false;
-    this.scene.add(core, halo);
+    core.frustumCulled = false;
+    this.scene.add(core);
   }
 
   update(ctx: FrameContext) {

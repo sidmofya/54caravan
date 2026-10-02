@@ -59,7 +59,7 @@ function woodMaterial() {
 /** GLSL for matted wool: curly fibres ~15-30 µm across, from warped ridge noise (vObj in mm). */
 export const FELT_GLSL = /* glsl */ `
   vec3 q = vObj;
-  vec3 w = vec3(fbm(q * 5.0), fbm(q * 5.0 + 5.2), fbm(q * 5.0 + 9.1));
+  vec3 w = vec3(vnoise(q * 5.0), vnoise(q * 5.0 + 5.2), vnoise(q * 5.0 + 9.1)) + 0.5 * vec3(vnoise(q * 11.0), vnoise(q * 11.0 + 3.1), vnoise(q * 11.0 + 7.7));
   vec3 a = (q + w * 0.12) * 60.0;
   vec3 b = (q + w * 0.2) * 32.0 + 3.0;
   float r1 = 1.0 - abs(2.0 * vnoise(a) - 1.0);

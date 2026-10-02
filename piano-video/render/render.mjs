@@ -43,6 +43,7 @@ const stills = opt("stills", null);
 const FILM = opt("film", "piano");
 const DATA = opt("data", null);
 const AUDIO_START = Number(opt("audio-start", 0));
+const NO_AUDIO = args.includes("--no-audio"); // for pieces joined later under one soundtrack
 const query = [`w=${W * SCALE}`, `h=${H * SCALE}`, FILM !== "piano" && `film=${FILM}`, DATA && `data=${DATA}`]
   .filter(Boolean)
   .join("&");
@@ -95,11 +96,13 @@ const ffmpeg = spawn(
   [
     "-hide_banner", "-loglevel", "error", "-y",
     "-f", "image2pipe", "-framerate", String(FPS), "-i", "-",
-    "-ss", String(AUDIO_START + from), "-t", String(to - from), "-i", audio,
+    ...(NO_AUDIO ? [] : ["-ss", String(AUDIO_START + from), "-t", String(to - from), "-i", audio]),
     ...(SCALE > 1 ? ["-vf", `scale=${W}:${H}:flags=lanczos`] : []),
     "-c:v", "libx264", "-preset", "slow", "-crf", "17", "-pix_fmt", "yuv420p",
-    "-af", `afade=t=out:st=${Math.max(to - from - 0.6, 0)}:d=0.6`,
-    "-c:a", "aac", "-b:a", "192k", "-shortest", "-movflags", "+faststart",
+    ...(NO_AUDIO
+      ? ["-an"]
+      : ["-af", `afade=t=out:st=${Math.max(to - from - 0.6, 0)}:d=0.6`, "-c:a", "aac", "-b:a", "192k", "-shortest"]),
+    "-movflags", "+faststart",
     outFile,
   ],
   { stdio: ["pipe", "inherit", "inherit"] },
