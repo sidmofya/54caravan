@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>While You Sleep – Piano</title>
+    <style>
+      html, body { margin: 0; height: 100%; background: #0b0907; color: #e9dcc6; font: 14px/1.4 Georgia, serif; }
+      #stage { display: block; width: 100vw; height: calc(100vh - 48px); }
+      #bar { height: 48px; display: flex; align-items: center; gap: 12px; padding: 0 16px; box-sizing: border-box; }
+      #bar input { flex: 1; accent-color: #c8924a; }
+      #bar button { background: #c8924a; color: #0b0907; border: 0; border-radius: 4px; padding: 6px 14px; font: inherit; cursor: pointer; }
+      #info { min-width: 120px; text-align: right; font-variant-numeric: tabular-nums; }
+      body.render #bar { display: none; }
+      body.render #stage { height: auto; }
+      #frame { position: relative; }
+      #vignette { position: absolute; inset: 0; pointer-events: none;
+        background: radial-gradient(ellipse 75% 70% at 50% 48%, transparent 55%, rgba(8,5,3,0.55) 100%); }
+    </style>
+  </head>
+  <body>
+    <div id="frame"><canvas id="stage"></canvas><div id="vignette"></div></div>
+    <div id="bar">
+      <button id="play">Play</button>
+      <input id="scrub" type="range" min="0" max="30" step="0.01" value="0" />
+      <span id="info"></span>
+    </div>
+    <audio id="audio" src="clip.wav" preload="auto"></audio>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
