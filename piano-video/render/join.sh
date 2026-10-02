@@ -33,5 +33,5 @@ ff -i "$OUT/while-you-sleep-0-30.mp4" -i "$OUT/cut2-video.mp4" -t 60 -i "$SRC" \
 
 # Share copies, small enough to send.
 ff -i "$OUT/while-you-sleep-30-60.mp4" -c:v libx264 -preset slow -crf 25 -pix_fmt yuv420p -c:a copy -movflags +faststart "$OUT/while-you-sleep-30-60-share.mp4"
-ff -i "$OUT/while-you-sleep-0-60.mp4" -c:v libx264 -preset slow -crf 28 -pix_fmt yuv420p -c:a copy -movflags +faststart "$OUT/while-you-sleep-0-60-share.mp4"
+ff -i "$OUT/while-you-sleep-0-60.mp4" -c:v libx264 -preset slow -crf 29 -pix_fmt yuv420p -c:a copy -movflags +faststart "$OUT/while-you-sleep-0-60-share.mp4"
 ls -la "$OUT"/while-you-sleep-*.mp4
