@@ -103,6 +103,22 @@ def fit_downbeats(groups: list[dict]) -> list[float]:
     return out
 
 
+def vocal_envelope(rate: int = 30) -> list[float]:
+    """Vocal loudness at `rate` Hz (0..1), smoothed, for visuals that breathe with the singing."""
+    path = STEMS / "vocals.wav"
+    if not path.exists():
+        return []
+    audio, sr = sf.read(str(path))
+    mono = audio.mean(axis=1) if audio.ndim > 1 else audio
+    hop = sr // rate
+    frames = len(mono) // hop
+    env = np.sqrt(np.array([np.mean(mono[i * hop : (i + 1) * hop] ** 2) for i in range(frames)]))
+    kernel = np.hanning(9)
+    env = np.convolve(env, kernel / kernel.sum(), mode="same")
+    env /= np.percentile(env, 99) or 1.0
+    return [round(float(min(e, 1.2)), 3) for e in env]
+
+
 def bar_vocal_energy(downbeats: list[float]) -> list[float]:
     """Mean vocal loudness in each bar (0..1), to find where the chorus lands."""
     path = STEMS / "vocals.wav"
@@ -147,6 +163,7 @@ def main() -> None:
         "beats": [round(b, 4) for b in beats if b <= DURATION + 1],
         "downbeats": [round(b, 4) for b in downbeats if b <= DURATION + 1],
         "barVocal": bar_vocal_energy([b for b in downbeats if b <= DURATION + 1]),
+        "vocalEnv": vocal_envelope(),
         "notes": [
             {"p": n["p"], "on": round(n["on"], 4), "off": round(n["off"], 4), "v": n["v"], "vel": n["vel"]}
             for n in notes

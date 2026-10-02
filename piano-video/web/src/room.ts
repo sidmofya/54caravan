@@ -123,8 +123,108 @@ function paintingTexture() {
   });
 }
 
+export const ROOM = { halfWidth: 2.6 };
+/** The bedroom doorway in the left wall. */
+export const DOOR = { z0: 1.55, z1: 2.4, height: 2.04 };
+/** The window in the right wall. */
+export const WINDOW = { z0: 0.75, z1: 1.85, y0: 0.85, y1: 2.15 };
+
+const trimMat = () => new THREE.MeshStandardMaterial({ color: 0xece6da, roughness: 0.5 });
+
+function buildDoor(group: THREE.Group): THREE.Object3D {
+  const x = -ROOM.halfWidth;
+  const trim = trimMat();
+  // Architrave around the opening, on the room side.
+  group.add(slab(x, x + 0.02, 0, DOOR.height + 0.07, DOOR.z0 - 0.07, DOOR.z0, trim));
+  group.add(slab(x, x + 0.02, 0, DOOR.height + 0.07, DOOR.z1, DOOR.z1 + 0.07, trim));
+  group.add(slab(x, x + 0.02, DOOR.height, DOOR.height + 0.07, DOOR.z0 - 0.07, DOOR.z1 + 0.07, trim));
+  // Jamb linings through the wall's thickness.
+  group.add(slab(x - 0.12, x, 0, DOOR.height, DOOR.z0 - 0.015, DOOR.z0, trim));
+  group.add(slab(x - 0.12, x, 0, DOOR.height, DOOR.z1, DOOR.z1 + 0.015, trim));
+  group.add(slab(x - 0.12, x, DOOR.height - 0.015, DOOR.height, DOOR.z0, DOOR.z1, trim));
+  // The leaf: a panelled door hinged at z0, swinging into the room.
+  const hinge = new THREE.Group();
+  hinge.position.set(x + 0.01, 0, DOOR.z0);
+  const w = DOOR.z1 - DOOR.z0 - 0.006;
+  const leafMat = new THREE.MeshStandardMaterial({ color: 0xe9e2d4, roughness: 0.45 });
+  hinge.add(slab(-0.02, 0.02, 0.005, DOOR.height - 0.008, 0.003, w, leafMat));
+  for (const [y0, y1] of [[0.18, 0.95], [1.1, 1.88]]) {
+    hinge.add(slab(0.02, 0.026, y0, y1, 0.1, w - 0.1, leafMat));
+  }
+  const knob = new THREE.Mesh(new THREE.SphereGeometry(0.028, 16, 12), M.brass);
+  knob.position.set(0.05, 1.0, w - 0.07);
+  hinge.add(knob);
+  group.add(hinge);
+  return hinge;
+}
+
+function buildHall(group: THREE.Group) {
+  // A short hall beyond the door, lit warm: the bedroom light left on.
+  const x = -ROOM.halfWidth;
+  const hallMat = new THREE.MeshStandardMaterial({ color: 0xd9c2a0, roughness: 0.9, side: THREE.BackSide });
+  const hall = new THREE.Mesh(new THREE.BoxGeometry(1.6, 2.6, 2.6), hallMat);
+  hall.position.set(x - 0.12 - 0.8, 1.3, (DOOR.z0 + DOOR.z1) / 2);
+  group.add(hall);
+  const glow = new THREE.PointLight(0xffc27a, 3.2, 1.9, 2);
+  glow.position.set(x - 0.9, 1.9, (DOOR.z0 + DOOR.z1) / 2 + 0.3);
+  group.add(glow);
+  // The wedge of light that falls into the room when the door opens.
+  const spill = new THREE.SpotLight(0xffc888, 0, 0, 0.42, 0.7, 2);
+  spill.position.set(x - 0.9, 1.7, (DOOR.z0 + DOOR.z1) / 2);
+  spill.target.position.set(x + 1.6, 0, (DOOR.z0 + DOOR.z1) / 2 - 0.2);
+  group.add(spill, spill.target);
+  return { spill };
+}
+
+function buildWindow(group: THREE.Group) {
+  const x = ROOM.halfWidth;
+  const trim = trimMat();
+  const { z0, z1, y0, y1 } = WINDOW;
+  // Frame, glazing bars and sill.
+  group.add(slab(x - 0.02, x, y0 - 0.06, y0, z0 - 0.06, z1 + 0.06, trim));
+  group.add(slab(x - 0.06, x, y0 - 0.03, y0, z0 - 0.08, z1 + 0.08, trim));
+  group.add(slab(x - 0.02, x, y1, y1 + 0.06, z0 - 0.06, z1 + 0.06, trim));
+  group.add(slab(x - 0.02, x, y0, y1, z0 - 0.06, z0, trim));
+  group.add(slab(x - 0.02, x, y0, y1, z1, z1 + 0.06, trim));
+  group.add(slab(x - 0.02, x, y0, y1, (z0 + z1) / 2 - 0.02, (z0 + z1) / 2 + 0.02, trim));
+  group.add(slab(x - 0.02, x, (y0 + y1) / 2 - 0.02, (y0 + y1) / 2 + 0.02, z0, z1, trim));
+  // The sky outside, a plane a little beyond the glass.
+  const sky = new THREE.MeshBasicMaterial({ color: 0x0b1424 });
+  const skyPlane = new THREE.Mesh(new THREE.PlaneGeometry(z1 - z0 + 0.4, y1 - y0 + 0.4), sky);
+  skyPlane.position.set(x + 0.25, (y0 + y1) / 2, (z0 + z1) / 2);
+  skyPlane.rotation.y = -Math.PI / 2;
+  group.add(skyPlane);
+  // Curtains, drawn back to either side in soft folds.
+  const curtainMat = new THREE.MeshStandardMaterial({ color: 0x5e4a3a, roughness: 0.95, side: THREE.DoubleSide });
+  for (const [za, zb] of [[z0 - 0.32, z0 + 0.04], [z1 - 0.04, z1 + 0.32]]) {
+    const geo = new THREE.PlaneGeometry(zb - za, 2.3, 40, 1);
+    const pos = geo.attributes.position;
+    for (let i = 0; i < pos.count; i++) pos.setZ(i, Math.sin(pos.getX(i) * 55) * 0.025);
+    geo.computeVertexNormals();
+    const c = new THREE.Mesh(geo, curtainMat);
+    c.position.set(x - 0.08, 2.35 - 1.15, (za + zb) / 2);
+    c.rotation.y = -Math.PI / 2;
+    c.castShadow = true;
+    c.receiveShadow = true;
+    group.add(c);
+  }
+  const dawn = new THREE.DirectionalLight(0xbcd0ff, 0);
+  dawn.position.set(x + 3, 2.6, (z0 + z1) / 2);
+  dawn.target.position.set(-0.5, 0.6, 0.6);
+  group.add(dawn, dawn.target);
+  return { sky, dawn };
+}
+
 export interface Room {
   group: THREE.Group;
+  /** The door leaf, hinged on its z = DOOR.z0 edge; rotate about y to open (positive opens into the room). */
+  door: THREE.Object3D;
+  /** Warm light from the hall, spilling through the open door. */
+  spill: THREE.SpotLight;
+  /** The sky beyond the window: night to dawn. */
+  sky: THREE.MeshBasicMaterial;
+  /** Cool morning light through the window, off until dawn. */
+  dawn: THREE.DirectionalLight;
 }
 
 export function buildRoom(): Room {
@@ -148,13 +248,21 @@ export function buildRoom(): Room {
   wall.receiveShadow = true;
   group.add(wall);
   // Side walls and ceiling close the room, so no shot looks into a void.
-  for (const side of [-1, 1]) {
-    const sideWall = new THREE.Mesh(new THREE.PlaneGeometry(8, 3.2), wall.material);
-    sideWall.position.set(side * 2.6, 1.6, 3.6);
-    sideWall.rotation.y = -side * Math.PI / 2;
-    sideWall.receiveShadow = true;
-    group.add(sideWall);
-  }
+  // The left wall has the bedroom door; the right wall a window.
+  const wallPiece = (side: number, z0: number, z1: number, y0: number, y1: number) => {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(z1 - z0, y1 - y0), wall.material);
+    m.position.set(side * ROOM.halfWidth, (y0 + y1) / 2, (z0 + z1) / 2);
+    m.rotation.y = -side * Math.PI / 2;
+    m.receiveShadow = true;
+    group.add(m);
+  };
+  wallPiece(-1, -0.4, DOOR.z0, 0, 3.2);
+  wallPiece(-1, DOOR.z1, 7.6, 0, 3.2);
+  wallPiece(-1, DOOR.z0, DOOR.z1, DOOR.height, 3.2);
+  wallPiece(1, -0.4, WINDOW.z0, 0, 3.2);
+  wallPiece(1, WINDOW.z1, 7.6, 0, 3.2);
+  wallPiece(1, WINDOW.z0, WINDOW.z1, 0, WINDOW.y0);
+  wallPiece(1, WINDOW.z0, WINDOW.z1, WINDOW.y1, 3.2);
   const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(6, 8), new THREE.MeshStandardMaterial({ color: 0xe8e0d2, roughness: 1 }));
   ceiling.rotation.x = Math.PI / 2;
   ceiling.position.set(0, 3.2, 3.6);
@@ -253,5 +361,8 @@ export function buildRoom(): Room {
     }
   }
 
-  return { group };
+  const door = buildDoor(group);
+  const { spill } = buildHall(group);
+  const { sky, dawn } = buildWindow(group);
+  return { group, door, spill, sky, dawn };
 }
