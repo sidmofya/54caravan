@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Standalone animation project with its own tooling.
+    "piano-video/**",
   ]),
 ]);
 

@@ -1,0 +1,14 @@
+# Audio -> notes -> sheet music pipeline (Python 3.11)
+torch
+transkun
+audio-separator[cpu]
+librosa<1.0
+pretty_midi
+mido
+music21
+verovio
+numpy
+scipy
+soundfile
+cairosvg
+pypdf
