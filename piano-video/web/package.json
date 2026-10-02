@@ -7,7 +7,7 @@
     "dev": "vite --host 127.0.0.1 --port 5173",
     "build": "vite build",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test src/*.test.ts src/journey/*.test.ts",
+    "test": "tsx --test src/*.test.ts src/journey/*.test.ts src/story/*.test.ts",
     "render": "node ../render/render.mjs"
   },
   "dependencies": {

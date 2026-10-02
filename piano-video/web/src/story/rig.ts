@@ -40,11 +40,11 @@ export interface FingerSpec {
 }
 
 export const FINGERS: FingerSpec[] = [
-  { name: "thumb", knuckle: [0.03, -0.028, -0.014], lengths: [0.034, 0.03, 0.026], radius: 0.0092, splay: 0.62 },
+  { name: "thumb", knuckle: [0.032, -0.022, -0.016], lengths: [0.045, 0.034, 0.028], radius: 0.0092, splay: 0.62 },
   { name: "index", knuckle: [0.025, -DIM.palm, 0], lengths: [0.04, 0.024, 0.02], radius: 0.0082, splay: 0.06 },
   { name: "middle", knuckle: [0.007, -DIM.palm - 0.003, 0], lengths: [0.044, 0.027, 0.021], radius: 0.0084, splay: 0 },
   { name: "ring", knuckle: [-0.011, -DIM.palm, 0], lengths: [0.041, 0.025, 0.02], radius: 0.0079, splay: -0.05 },
-  { name: "little", knuckle: [-0.027, -DIM.palm + 0.008, 0], lengths: [0.033, 0.019, 0.018], radius: 0.0071, splay: -0.12 },
+  { name: "little", knuckle: [-0.027, -DIM.palm + 0.008, 0], lengths: [0.035, 0.021, 0.019], radius: 0.0071, splay: -0.12 },
 ];
 
 export interface Hand {
@@ -187,6 +187,12 @@ export function twoBoneIK(
  * toward the target. Iterative, deterministic (fixed iterations).
  */
 export function fingerIK(chain: THREE.Object3D[], spec: FingerSpec, target: THREE.Vector3, isThumb: boolean) {
+  const { a, c, spread } = solveFinger(chain, spec, target, isThumb);
+  setFingerCurl(chain, spec, a, c, spread, isThumb);
+}
+
+/** Knuckle angle, curl and spread that put a finger's tip on `target`; the hand must be posed. */
+export function solveFinger(chain: THREE.Object3D[], spec: FingerSpec, target: THREE.Vector3, isThumb: boolean) {
   const hand = chain[0].parent!;
   hand.updateMatrixWorld(true);
   const local = hand.worldToLocal(target.clone());
@@ -226,7 +232,7 @@ export function fingerIK(chain: THREE.Object3D[], spec: FingerSpec, target: THRE
     a = THREE.MathUtils.clamp(a + (j22 * r1 - j12 * r2) / det, -0.35, 1.45);
     c = THREE.MathUtils.clamp(c + (j11 * r2 - j12 * r1) / det, 0.05, 1.6);
   }
-  setFingerCurl(chain, spec, a, c, spread, isThumb);
+  return { a, c, spread };
 }
 
 /** Pose a finger from knuckle angle, curl and sideways spread. */

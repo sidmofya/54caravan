@@ -6,7 +6,7 @@ import * as THREE from "three";
 import { PianoScene } from "../scene";
 import type { Performance } from "../timeline";
 import { Pianist } from "./body";
-import { seatedPose, standingPose, type FingerTarget, type SeatSpec } from "./pose";
+import { seatedPose, standingPose, type FingerTarget } from "./pose";
 import { buildStool } from "./stool";
 
 type Vec = [number, number, number];
@@ -36,7 +36,7 @@ export const SHOTS: Shot[] = [
 // An E minor shape: left hand E3 G3 B3, right hand E4 and B4 under thumb and little finger.
 const down = (p: number): FingerTarget => ({ p, depression: 1, lift: 0 });
 const hover = (p: number): FingerTarget => ({ p, depression: 0, lift: 0.012 });
-const HANDS: SeatSpec["hands"] = {
+const HANDS: Record<"L" | "R", FingerTarget[]> = {
   L: [down(59), hover(57), down(55), hover(53), down(52)],
   R: [down(64), hover(66), hover(67), hover(69), down(71)],
 };
@@ -57,7 +57,7 @@ export class PortraitFilm {
     s.add(this.pianist.rig.root, this.pianist.group, this.stool);
     // A soft warm fill from the camera side so her front reads at night.
     s.add(this.fill, this.fill.target);
-    this.piano.room.door.rotation.y = 1.2;
+    this.piano.room.door.rotation.y = -1.2;
     this.piano.room.spill.intensity = 18;
   }
 

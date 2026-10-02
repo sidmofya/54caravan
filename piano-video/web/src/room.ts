@@ -142,17 +142,18 @@ function buildDoor(group: THREE.Group): THREE.Object3D {
   group.add(slab(x - 0.12, x, 0, DOOR.height, DOOR.z0 - 0.015, DOOR.z0, trim));
   group.add(slab(x - 0.12, x, 0, DOOR.height, DOOR.z1, DOOR.z1 + 0.015, trim));
   group.add(slab(x - 0.12, x, DOOR.height - 0.015, DOOR.height, DOOR.z0, DOOR.z1, trim));
-  // The leaf: a panelled door hinged at z0, swinging into the room.
+  // The leaf: a panelled door hinged on its far (z1) side, swinging into
+  // the room, so from inside the room the opening shows past it.
   const hinge = new THREE.Group();
-  hinge.position.set(x + 0.01, 0, DOOR.z0);
+  hinge.position.set(x + 0.01, 0, DOOR.z1);
   const w = DOOR.z1 - DOOR.z0 - 0.006;
   const leafMat = new THREE.MeshStandardMaterial({ color: 0xe9e2d4, roughness: 0.45 });
-  hinge.add(slab(-0.02, 0.02, 0.005, DOOR.height - 0.008, 0.003, w, leafMat));
+  hinge.add(slab(-0.02, 0.02, 0.005, DOOR.height - 0.008, -w, -0.003, leafMat));
   for (const [y0, y1] of [[0.18, 0.95], [1.1, 1.88]]) {
-    hinge.add(slab(0.02, 0.026, y0, y1, 0.1, w - 0.1, leafMat));
+    hinge.add(slab(0.02, 0.026, y0, y1, -(w - 0.1), -0.1, leafMat));
   }
   const knob = new THREE.Mesh(new THREE.SphereGeometry(0.028, 16, 12), M.brass);
-  knob.position.set(0.05, 1.0, w - 0.07);
+  knob.position.set(0.05, 1.0, -(w - 0.07));
   hinge.add(knob);
   group.add(hinge);
   return hinge;
@@ -217,7 +218,7 @@ function buildWindow(group: THREE.Group) {
 
 export interface Room {
   group: THREE.Group;
-  /** The door leaf, hinged on its z = DOOR.z0 edge; rotate about y to open (positive opens into the room). */
+  /** The door leaf, hinged on its z = DOOR.z1 edge; rotate about y to open (negative opens into the room). */
   door: THREE.Object3D;
   /** Warm light from the hall, spilling through the open door. */
   spill: THREE.SpotLight;

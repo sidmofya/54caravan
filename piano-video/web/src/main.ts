@@ -1,6 +1,7 @@
 import { JourneyFilm } from "./journey/film";
 import { LEVEL_FACTORIES } from "./journey/levels";
 import { PianoScene } from "./scene";
+import { StoryFilm } from "./story/film";
 import { PortraitFilm, SHOTS } from "./story/portrait";
 import type { Performance } from "./timeline";
 
@@ -47,11 +48,29 @@ function portrait() {
   window.pianoReady = true;
 }
 
+/** The pianist's scene; render time is performance time of the data given. */
+function story(perf: Performance) {
+  const canvas = document.querySelector<HTMLCanvasElement>("#stage")!;
+  const w = Number(params.get("w") ?? 1920);
+  const h = Number(params.get("h") ?? 1080);
+  canvas.style.width = `${w}px`;
+  canvas.style.height = `${h}px`;
+  document.body.classList.add("render");
+  const film = new StoryFilm(canvas, perf, Number(params.get("offset") ?? 60));
+  film.setSize(w, h);
+  window.renderAt = (t) => film.renderAt(t);
+  (window as unknown as { __film: StoryFilm }).__film = film;
+  window.pianoInfo = { duration: perf.duration, shots: [] };
+  film.renderAt(Number(params.get("t") ?? 0));
+  window.pianoReady = true;
+}
+
 async function main() {
   if (params.get("film") === "portrait") return portrait();
   const data = params.get("data");
   const perf: Performance = await (await fetch(data ? `${data}/notes.json` : "notes.json")).json();
   if (params.get("film") === "journey") return journey(perf);
+  if (params.get("film") === "story") return story(perf);
 
   const canvas = document.querySelector<HTMLCanvasElement>("#stage")!;
   const scene = new PianoScene(canvas, perf, { antialias: params.get("aa") !== "0" });
