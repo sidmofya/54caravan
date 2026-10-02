@@ -1,9 +1,13 @@
 # While You Sleep: piano animation
 
-A code-built video of a white upright piano playing *While You Sleep* (sonikalkebulan), in two cuts at 1920×1080, 30 fps:
+A code-built video of a white upright piano playing *While You Sleep* (sonikalkebulan), the whole song at 1920×1080, 30 fps:
 
-- **Cut 1, 0:00–0:30**: the piano plays. The keys go down, the hammers strike, the dampers lift and the strings ring, all in time with the recording, while the camera moves between the keyboard and the action.
-- **Cut 2, 0:30–1:00**: a Powers-of-Ten dive into one hammer strike. The camera goes from the A3 hammer through felt meeting steel, inside the wire, the iron lattice, an iron atom and its nucleus, down to a proton, then rushes back out to the keys. Time slows the deeper we go, and each note sends a pulse through whatever scale is on screen.
+- **0:00–0:30, cut 1**: the piano plays. The keys go down, the hammers strike, the dampers lift and the strings ring, all in time with the recording, while the camera moves between the keyboard and the action.
+- **0:30–1:00, cut 2**: a Powers-of-Ten dive into one hammer strike. The camera goes from the A3 hammer through felt meeting steel, inside the wire, the iron lattice, an iron atom and its nucleus, down to a proton, then rushes back out to the keys. Time slows the deeper we go, and each note sends a pulse through whatever scale is on screen.
+- **1:00–1:52, verse 2**: the piano plays itself again, with new shots, among them a wide one that shows the bedroom door.
+- **1:52–2:31, chorus 2**: a quick plunge back into an iron atom, which swells with the singing and dips toward its nucleus on the loudest bar, then a rush out that lands as the door opens.
+- **2:31–3:07, the break**: a woman comes in from the lit hall carrying a piano stool, sets it down, sits and plays the instrumental break; every note has a hand and a finger.
+- **3:07–3:29, outro**: she stands, rests a hand on the piano and leaves; the keys play on alone as dawn comes to the window.
 
 ## How it works
 
@@ -38,6 +42,10 @@ node ../render/render.mjs                          # cut 1 -> out/while-you-slee
 node ../render/render.mjs --stills 3.5,9.95        # PNG stills -> out/stills/
 node ../render/render.mjs --from 4.4 --to 6.6      # a short clip
 node ../render/render.mjs --film journey --data 30-60 --audio-start 30   # cut 2
+node ../render/render.mjs --film song --data 60-209 --no-audio --from 0 --to 25 --out ../out/song-00.mp4
+                                         # 1:00 to the end, in pieces (times are seconds after 1:00)
+node ../render/render.mjs --film portrait --stills 0,1,2,3,4,5,6,7,8   # look-development stills of the pianist
+../render/full.sh                        # join everything under the source audio, plus the web pieces
 ```
 
 Cut 2's data comes from the same pipeline run on its section: `SEGMENT=30-60 ~/pv-venv/bin/python 01_prepare.py` and so on through `06_check.py`, which writes to `data/30-60/`.
@@ -69,6 +77,18 @@ The transcription is automatic. The track is generated audio with vocals on top,
 
 `choreography.ts` sets the zoom (log₁₀ of frame width), the slow-motion factor and the handovers, cued to the bar grid: the strike on bar 2, the empty atom in the quiet breakdown, the proton as the chorus enters (0:48.3), and the landing on the keys at 0:52.7. `compositor.ts` dissolves between scales from the centre outward, then adds bloom, a zoom blur in the rush and film grain.
 
+## The pianist
+
+`web/src/story/` holds her and her scene. She is built in code like the piano: a skeleton (`rig.ts`) with 15 finger joints per hand, sculpted head and hands, and cloth (`loft.ts`, `body.ts`) rebuilt every frame from the joints, so the robe and nightdress follow her legs when she walks and drape over her knees when she sits.
+
+- `pose.ts` describes a pose as a body (feet, hips, spine, head) plus arms that are solved once the body is placed, so any two poses crossfade.
+- `motion.ts` walks her along a path: footsteps are planned in advance, planted feet never slide, and the hips drop exactly as far as the legs need to reach.
+- `fingering.ts` gives every note of the break a hand and a finger with a beam search that moves each hand as little as it can, and lifts each finger off in time for its next note. Fingertips follow the same key depression the piano draws.
+- `performer.ts` is the scene's timetable (`STORY`): the door opens at 2:31.6, she sits by 2:39.6, plays from 2:40.6 to 3:07.3 and is out of sight by 3:17.
+- `director.ts` is the scene's camera plan, cut to the bar grid; `film.ts` adds a soft fill light, the window's dawn and the fade.
+
+`web/src/song/film.ts` runs 1:00 to the end on one renderer and one room: verse 2 with its own shot plan (`VERSE_2`), chorus 2 through the journey film with the atom script (`CUES_CHORUS_2` in `choreography.ts`), then her scene.
+
 ## Directing the camera
 
 `web/src/director.ts` holds the shot plan (`PLAN`): a list of shots measured in bars, each with a kind and how long it takes to move in from the previous shot (0 means a cut).
@@ -82,8 +102,12 @@ The transcription is automatic. The track is generated audio with vocals on top,
 | `row` | Inside the case, looking down the line of hammers |
 | `macro` | One hammer hitting its strings, chosen as the loudest note in the bar |
 | `outro` | Pulling back out of the room |
+| `doorway` | From the far corner: the piano and the closed bedroom door |
+| `overhead` | Looking down on the keys and into the hammers |
+| `pedal` | Low, on the brass pedals |
+| `window` | Across the piano toward the curtained window |
 
 ## Notes on the environment
 
 - Hugging Face, Zenodo and Facebook's model host are unreachable from the build container, so the pipeline uses models that ship in pip wheels or GitHub releases: Transkun for transcription and an MDX-Net model for vocal removal. Demucs' six-stem model, which has a dedicated piano stem, would separate more cleanly where its weights can be downloaded; `02_separate.py` tries it first.
-- Rendering uses software WebGL (SwiftShader) at about 3–9 s per frame, so each 30-second cut takes one to one and a half hours. Render long cuts in pieces with `--from`, `--to` and `--no-audio`, then mux the source audio over the joined video. On a machine with a GPU, the same script runs far faster.
+- Rendering uses software WebGL (SwiftShader) at about 3–9 s per frame, so each 30-second stretch takes one to one and a half hours. Render long cuts in pieces with `--from`, `--to` and `--no-audio`, then mux the source audio over the joined video. On a machine with a GPU, the same script runs far faster.
