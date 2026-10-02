@@ -4,7 +4,8 @@
 //   node render/render.mjs --stills 1.5,4.6     PNG stills -> out/stills/
 //   node render/render.mjs --from 4 --to 8      a partial clip, for quick checks
 //
-// Expects the Vite dev server running (npm run dev in web/).
+// Starts its own Vite server with hot reload off, so editing the source
+// while a render runs can't reload the page mid-video.
 
 import { spawn } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -23,7 +24,15 @@ const opt = (name, fallback) => {
   return i >= 0 ? args[i + 1] : fallback;
 };
 
-const URL = opt("url", "http://127.0.0.1:5173/");
+const { createServer } = require("vite");
+const server = await createServer({
+  root: join(ROOT, "web"),
+  configFile: join(ROOT, "web/vite.config.ts"),
+  server: { port: 0, strictPort: false, hmr: false, watch: null },
+  logLevel: "warn",
+});
+await server.listen();
+const URL = opt("url", server.resolvedUrls.local[0]);
 const FPS = Number(opt("fps", 30));
 const W = Number(opt("w", 1920));
 const H = Number(opt("h", 1080));
@@ -62,6 +71,7 @@ if (stills) {
     console.log(file);
   }
   await browser.close();
+  await server.close();
   process.exit(0);
 }
 
@@ -98,4 +108,5 @@ for (let i = 0; i < frames; i++) {
 ffmpeg.stdin.end();
 await new Promise((r) => ffmpeg.on("close", r));
 await browser.close();
+await server.close();
 console.log(`wrote ${outFile} in ${((Date.now() - started) / 60000).toFixed(1)} min`);

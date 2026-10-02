@@ -44,6 +44,9 @@ const PLAN: { bars: number; kind: ShotKind; move: number }[] = [
   { bars: 99, kind: "outro", move: 1.6 },
 ];
 
+/** Cuts land this long before the downbeat, so the first strike is seen in flight. */
+const CUT_LEAD = 0.3;
+
 const ease = (x: number) => {
   const c = Math.min(Math.max(x, 0), 1);
   return c * c * c * (c * (c * 6 - 15) + 10);
@@ -66,9 +69,13 @@ export class Director {
     let start = 0;
     for (const step of PLAN) {
       const endBar = i + step.bars;
-      const end = endBar < bars.length ? bars[endBar] : this.perf.duration + 1;
+      const end = endBar < bars.length ? bars[endBar] - CUT_LEAD : this.perf.duration + 1;
       const shot: Shot = { kind: step.kind, start, end, move: step.move };
-      if (step.kind === "macro") shot.pitch = this.featuredNote(start, end)?.p ?? 64;
+      if (step.kind === "macro") {
+        // Fall back to the last chord before the shot, still ringing.
+        const note = this.featuredNote(start, end) ?? this.perf.notes.filter((n) => n.on < start + 0.15).at(-1);
+        shot.pitch = note?.p ?? 64;
+      }
       this.shots.push(shot);
       start = end;
       i = endBar;
@@ -76,10 +83,10 @@ export class Director {
     }
   }
 
-  /** The loudest, most exposed note in a span, for a macro shot. */
+  /** The loudest note struck during a span, for a macro shot. */
   private featuredNote(start: number, end: number): Note | undefined {
-    const inSpan = this.perf.notes.filter((n) => n.on >= start + 0.1 && n.on < end - 0.4);
-    return inSpan.sort((a, b) => b.v - a.v)[0];
+    const inSpan = this.perf.notes.filter((n) => n.on >= start + 0.15 && n.on < end - 0.4);
+    return [...inSpan].sort((a, b) => b.v - a.v)[0];
   }
 
   /** Where the music is on the keyboard, smoothed so the camera glides. */
