@@ -10,10 +10,10 @@ import { Loft, ringPoint, type Ring } from "./loft";
 import { buildRig, DIM, FINGERS, SIDES, sideSign, type Rig, type Side } from "./rig";
 
 export const PALETTE = {
-  skin: 0x3f281c,
-  skinLight: 0x7a5040, // palms and soles
-  lips: 0x62352b,
-  lipLower: 0x77423a,
+  skin: 0x573726,
+  skinLight: 0x93634c, // palms and soles
+  lips: 0x6a3a2f,
+  lipLower: 0x804a40,
   lashes: 0x100a08,
   iris: 0x2a1810,
   sclera: 0xd2c8bb,
@@ -145,7 +145,7 @@ function headGeometry(): THREE.BufferGeometry {
       .lerp(col(PALETTE.lips), smooth(0.35, 0.8, f.upperLip) * 0.85)
       .lerp(col(PALETTE.lipLower), smooth(0.3, 0.8, f.lowerLip) * 0.85);
     // A touch of warmth on the cheeks, shadow in the lip line.
-    c.lerp(col(0x5a3424), 0.25 * bump(Math.abs(u.x), 0.45, 0.2) * bump(u.y, -0.2, 0.2) * f.front);
+    c.lerp(col(0x6e4430), 0.25 * bump(Math.abs(u.x), 0.45, 0.2) * bump(u.y, -0.2, 0.2) * f.front);
     return c.multiplyScalar(1 - 0.3 * f.seam);
   });
   return geo;
@@ -386,7 +386,7 @@ export class Pianist {
     add(r.head, hairGeometry(), hairMaterial());
     r.head.add(eyeGroup(1), eyeGroup(-1));
 
-    const nail = new THREE.MeshPhysicalMaterial({ color: 0x8e6a58, roughness: 0.3, clearcoat: 0.5 });
+    const nail = new THREE.MeshPhysicalMaterial({ color: 0x9c7764, roughness: 0.3, clearcoat: 0.5 });
     for (const s of SIDES) {
       const thumbSign = -sideSign(s);
       const h = r.hand[s];
