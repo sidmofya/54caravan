@@ -59,7 +59,8 @@ print(f"{len(segs)} pieces, {t:.2f}s, largest {max(sizes)/1e6:.1f} MB, total {su
 PY
 
 # Share copies of the new sections.
-ff -ss 60 -to 151.6 -i "$OUT/while-you-sleep-full.mp4" -c:v libx264 -preset slow -crf 28 -pix_fmt yuv420p \
+# The atom's fine particles and grain compress poorly, so this one is 720p to stay under 30 MB.
+ff -ss 60 -to 151.6 -i "$OUT/while-you-sleep-full.mp4" -vf scale=1280:720:flags=lanczos -c:v libx264 -preset slow -crf 27 -pix_fmt yuv420p \
   -c:a aac -b:a 128k -movflags +faststart "$OUT/while-you-sleep-60-152-share.mp4"
 ff -ss 151.6 -i "$OUT/while-you-sleep-full.mp4" -c:v libx264 -preset slow -crf 28 -pix_fmt yuv420p \
   -c:a aac -b:a 128k -movflags +faststart "$OUT/while-you-sleep-152-209-share.mp4"

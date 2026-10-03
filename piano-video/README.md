@@ -107,7 +107,14 @@ The transcription is automatic. The track is generated audio with vocals on top,
 | `pedal` | Low, on the brass pedals |
 | `window` | Across the piano toward the curtained window |
 
+## Delivering the whole song
+
+1. Render 1:00 to the end in pieces of 30 seconds or less (each about an hour in software WebGL), video only:
+   `node render/render.mjs --film song --data 60-209 --no-audio --from 0 --to 30 --out out/song-0000.0.mp4`, then `30 60`, `60 91.5`, `91.5 120`, `120 149`. Render from a separate checkout (a `git worktree`) so editing the source can't change frames halfway through.
+2. `render/full.sh` joins cut 1, cut 2 and the pieces under one pass of the source audio into `out/while-you-sleep-full.mp4`, cuts an 8 Mbit/s copy into twelve-second fragmented-MP4 pieces for streaming (`out/web/`), and writes share copies of the new sections.
+3. The streaming page plays those pieces through Media Source Extensions, jumps to the right piece when you seek, and its "Save video" button joins them back into one MP4.
+
 ## Notes on the environment
 
 - Hugging Face, Zenodo and Facebook's model host are unreachable from the build container, so the pipeline uses models that ship in pip wheels or GitHub releases: Transkun for transcription and an MDX-Net model for vocal removal. Demucs' six-stem model, which has a dedicated piano stem, would separate more cleanly where its weights can be downloaded; `02_separate.py` tries it first.
-- Rendering uses software WebGL (SwiftShader) at about 3–9 s per frame, so each 30-second stretch takes one to one and a half hours. Render long cuts in pieces with `--from`, `--to` and `--no-audio`, then mux the source audio over the joined video. On a machine with a GPU, the same script runs far faster.
+- Rendering uses software WebGL (SwiftShader) at about 3–9 s per frame, so each 30-second stretch takes one to one and a half hours. A cloud container is reclaimed when its session goes idle, and a render running in it stops with it, so keep the session active until the last piece finishes. Render long cuts in pieces with `--from`, `--to` and `--no-audio`, then mux the source audio over the joined video. On a machine with a GPU, the same script runs far faster.
